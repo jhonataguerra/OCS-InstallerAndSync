@@ -1,0 +1,12 @@
+Stop-Service -Name "OCS INVENTORY SERVICE" -ErrorAction SilentlyContinue
+Get-Process -Name "OcsService", "OcsInventory", "OcsSystray" -ErrorAction SilentlyContinue | Stop-Process -Force
+if (Test-Path "C:\Program Files (x86)\OCS Inventory Agent\uninst.exe") { Start-Process -FilePath "C:\Program Files (x86)\OCS Inventory Agent\uninst.exe" -ArgumentList "/S" -Wait }
+if (Test-Path "C:\Program Files\OCS Inventory Agent\uninst.exe") { Start-Process -FilePath "C:\Program Files\OCS Inventory Agent\uninst.exe" -ArgumentList "/S" -Wait }
+sc.exe delete "OCS INVENTORY SERVICE"
+Remove-Item -Path "C:\Program Files (x86)\OCS Inventory Agent" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "C:\Program Files\OCS Inventory Agent" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "C:\ProgramData\OCS Inventory NG" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "HKLM:\SOFTWARE\WOW6432Node\OCS Inventory Agent" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "HKLM:\SOFTWARE\OCS Inventory Agent" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "HKLM:\SOFTWARE\WOW6432Node\OCS Inventory NG" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "HKLM:\SOFTWARE\OCS Inventory NG" -Recurse -Force -ErrorAction SilentlyContinue
