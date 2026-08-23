@@ -1,6 +1,7 @@
 # ============================================================
 # OCS InstallerAndSync — .gitignore
 # ============================================================
+.gitignore
 
 # --- Sistema Operacional & Arquivos Indesejados ---
 Thumbs.db
@@ -65,5 +66,3 @@ logs/
 
 # --- Arquivos de Orquestração / Rascunhos ---
 orquestrador_inicio.md
-
-.gitignore
