@@ -1,0 +1,5 @@
+sudo mysql -e "CREATE DATABASE IF NOT EXISTS ocsweb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -e "DROP USER IF EXISTS 'ocs'@'localhost';"
+sudo mysql -e "CREATE USER 'ocs'@'localhost' IDENTIFIED BY '123456';"
+sudo mysql -e "GRANT ALL PRIVILEGES ON ocsweb.* TO 'ocs'@'localhost';"
+sudo mysql -e "FLUSH PRIVILEGES;"
