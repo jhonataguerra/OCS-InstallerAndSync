@@ -8,10 +8,13 @@ namespace OCSCadastroApp
         private System.ComponentModel.IContainer components = null;
 
         private Panel panelHeader;
+        private Label lblHeaderBadge;
         private Label lblHeaderTitle;
         private Label lblHeaderSubtitle;
+        private Panel panelHeaderLine;
 
-        private GroupBox grpUsuario;
+        private Panel panelContent;
+
         private Label lblNome;
         private TextBox txtNome;
         private Label lblPatrimonio;
@@ -19,15 +22,21 @@ namespace OCSCadastroApp
         private Label lblSetor;
         private TextBox txtSetor;
 
-        private GroupBox grpSistema;
-        private Label lblSysHostname;
-        private Label lblSysUsuario;
-        private Label lblSysSerial;
-        private Label lblSysSO;
+        private Panel panelSysInfo;
+        private Label lblSysTitle;
+        private Label lblTagHostname;
+        private Label lblValHostname;
+        private Label lblTagUsuario;
+        private Label lblValUsuario;
+        private Label lblTagSerial;
+        private Label lblValSerial;
+        private Label lblTagSO;
+        private Label lblValSO;
 
         private Panel panelAviso;
         private Label lblAvisoIcon;
-        private Label lblAvisoPrazo;
+        private Label lblAvisoTitulo;
+        private Label lblAvisoDescricao;
 
         private Button btnEnviar;
         private Button btnFechar;
@@ -48,10 +57,13 @@ namespace OCSCadastroApp
             this.components = new System.ComponentModel.Container();
 
             this.panelHeader = new Panel();
+            this.lblHeaderBadge = new Label();
             this.lblHeaderTitle = new Label();
             this.lblHeaderSubtitle = new Label();
+            this.panelHeaderLine = new Panel();
 
-            this.grpUsuario = new GroupBox();
+            this.panelContent = new Panel();
+
             this.lblNome = new Label();
             this.txtNome = new TextBox();
             this.lblPatrimonio = new Label();
@@ -59,15 +71,21 @@ namespace OCSCadastroApp
             this.lblSetor = new Label();
             this.txtSetor = new TextBox();
 
-            this.grpSistema = new GroupBox();
-            this.lblSysHostname = new Label();
-            this.lblSysUsuario = new Label();
-            this.lblSysSerial = new Label();
-            this.lblSysSO = new Label();
+            this.panelSysInfo = new Panel();
+            this.lblSysTitle = new Label();
+            this.lblTagHostname = new Label();
+            this.lblValHostname = new Label();
+            this.lblTagUsuario = new Label();
+            this.lblValUsuario = new Label();
+            this.lblTagSerial = new Label();
+            this.lblValSerial = new Label();
+            this.lblTagSO = new Label();
+            this.lblValSO = new Label();
 
             this.panelAviso = new Panel();
             this.lblAvisoIcon = new Label();
-            this.lblAvisoPrazo = new Label();
+            this.lblAvisoTitulo = new Label();
+            this.lblAvisoDescricao = new Label();
 
             this.btnEnviar = new Button();
             this.btnFechar = new Button();
@@ -75,80 +93,113 @@ namespace OCSCadastroApp
             this.timerBloqueio = new Timer(this.components);
 
             this.panelHeader.SuspendLayout();
-            this.grpUsuario.SuspendLayout();
-            this.grpSistema.SuspendLayout();
+            this.panelContent.SuspendLayout();
+            this.panelSysInfo.SuspendLayout();
             this.panelAviso.SuspendLayout();
             this.SuspendLayout();
 
             // 
             // panelHeader
             // 
-            this.panelHeader.BackColor = Color.FromArgb(24, 90, 157);
+            this.panelHeader.BackColor = Color.FromArgb(255, 255, 255);
+            this.panelHeader.Controls.Add(this.lblHeaderBadge);
             this.panelHeader.Controls.Add(this.lblHeaderSubtitle);
             this.panelHeader.Controls.Add(this.lblHeaderTitle);
+            this.panelHeader.Controls.Add(this.panelHeaderLine);
             this.panelHeader.Dock = DockStyle.Top;
             this.panelHeader.Location = new Point(0, 0);
             this.panelHeader.Name = "panelHeader";
-            this.panelHeader.Size = new Size(520, 75);
+            this.panelHeader.Size = new Size(540, 78);
             this.panelHeader.TabIndex = 0;
+
+            // 
+            // panelHeaderLine
+            // 
+            this.panelHeaderLine.BackColor = Color.FromArgb(37, 99, 235); // Blue 600
+            this.panelHeaderLine.Dock = DockStyle.Top;
+            this.panelHeaderLine.Location = new Point(0, 0);
+            this.panelHeaderLine.Name = "panelHeaderLine";
+            this.panelHeaderLine.Size = new Size(540, 3);
+            this.panelHeaderLine.TabIndex = 3;
 
             // 
             // lblHeaderTitle
             // 
             this.lblHeaderTitle.AutoSize = true;
             this.lblHeaderTitle.Font = new Font("Segoe UI", 13.5F, FontStyle.Bold, GraphicsUnit.Point);
-            this.lblHeaderTitle.ForeColor = Color.White;
-            this.lblHeaderTitle.Location = new Point(20, 14);
+            this.lblHeaderTitle.ForeColor = Color.FromArgb(15, 23, 42); // Slate 900
+            this.lblHeaderTitle.Location = new Point(22, 16);
             this.lblHeaderTitle.Name = "lblHeaderTitle";
-            this.lblHeaderTitle.Size = new Size(345, 25);
-            this.lblHeaderTitle.Text = "Cadastro de Patrimônio e Equipamento";
+            this.lblHeaderTitle.Size = new Size(250, 25);
+            this.lblHeaderTitle.Text = "Identificação de Patrimônio";
 
             // 
             // lblHeaderSubtitle
             // 
             this.lblHeaderSubtitle.AutoSize = true;
-            this.lblHeaderSubtitle.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
-            this.lblHeaderSubtitle.ForeColor = Color.FromArgb(215, 235, 255);
-            this.lblHeaderSubtitle.Location = new Point(22, 43);
+            this.lblHeaderSubtitle.Font = new Font("Segoe UI", 8.75F, FontStyle.Regular, GraphicsUnit.Point);
+            this.lblHeaderSubtitle.ForeColor = Color.FromArgb(100, 116, 139); // Slate 500
+            this.lblHeaderSubtitle.Location = new Point(24, 44);
             this.lblHeaderSubtitle.Name = "lblHeaderSubtitle";
-            this.lblHeaderSubtitle.Size = new Size(450, 15);
-            this.lblHeaderSubtitle.Text = "Preencha os dados abaixo para vincular seu equipamento ao inventario corporativo.";
+            this.lblHeaderSubtitle.Size = new Size(330, 15);
+            this.lblHeaderSubtitle.Text = "Vincule as informações deste computador ao inventário corporativo";
 
             // 
-            // grpUsuario
+            // lblHeaderBadge
             // 
-            this.grpUsuario.Controls.Add(this.txtSetor);
-            this.grpUsuario.Controls.Add(this.lblSetor);
-            this.grpUsuario.Controls.Add(this.txtPatrimonio);
-            this.grpUsuario.Controls.Add(this.lblPatrimonio);
-            this.grpUsuario.Controls.Add(this.txtNome);
-            this.grpUsuario.Controls.Add(this.lblNome);
-            this.grpUsuario.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            this.grpUsuario.Location = new Point(20, 85);
-            this.grpUsuario.Name = "grpUsuario";
-            this.grpUsuario.Size = new Size(480, 195);
-            this.grpUsuario.TabIndex = 1;
-            this.grpUsuario.TabStop = false;
-            this.grpUsuario.Text = " Dados do Responsavel e Localizacao ";
+            this.lblHeaderBadge.BackColor = Color.FromArgb(239, 246, 255); // Blue 50
+            this.lblHeaderBadge.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            this.lblHeaderBadge.ForeColor = Color.FromArgb(29, 78, 216); // Blue 700
+            this.lblHeaderBadge.Location = new Point(415, 20);
+            this.lblHeaderBadge.Name = "lblHeaderBadge";
+            this.lblHeaderBadge.Size = new Size(100, 22);
+            this.lblHeaderBadge.Text = "OCS INVENTORY";
+            this.lblHeaderBadge.TextAlign = ContentAlignment.MiddleCenter;
+
+            // 
+            // panelContent
+            // 
+            this.panelContent.BackColor = Color.FromArgb(248, 250, 252); // Slate 50
+            this.panelContent.Controls.Add(this.lblStatus);
+            this.panelContent.Controls.Add(this.btnFechar);
+            this.panelContent.Controls.Add(this.btnEnviar);
+            this.panelContent.Controls.Add(this.panelAviso);
+            this.panelContent.Controls.Add(this.panelSysInfo);
+            this.panelContent.Controls.Add(this.txtSetor);
+            this.panelContent.Controls.Add(this.lblSetor);
+            this.panelContent.Controls.Add(this.txtPatrimonio);
+            this.panelContent.Controls.Add(this.lblPatrimonio);
+            this.panelContent.Controls.Add(this.txtNome);
+            this.panelContent.Controls.Add(this.lblNome);
+            this.panelContent.Dock = DockStyle.Fill;
+            this.panelContent.Location = new Point(0, 78);
+            this.panelContent.Name = "panelContent";
+            this.panelContent.Padding = new Padding(24, 16, 24, 16);
+            this.panelContent.Size = new Size(540, 472);
+            this.panelContent.TabIndex = 1;
 
             // 
             // lblNome
             // 
             this.lblNome.AutoSize = true;
-            this.lblNome.Font = new Font("Segoe UI", 9F);
-            this.lblNome.Location = new Point(16, 28);
+            this.lblNome.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblNome.ForeColor = Color.FromArgb(51, 65, 85); // Slate 700
+            this.lblNome.Location = new Point(24, 12);
             this.lblNome.Name = "lblNome";
-            this.lblNome.Size = new Size(130, 15);
-            this.lblNome.Text = "Nome do Responsável:";
+            this.lblNome.Size = new Size(130, 13);
+            this.lblNome.Text = "NOME DO RESPONSÁVEL";
 
             // 
             // txtNome
             // 
-            this.txtNome.Font = new Font("Segoe UI", 9.5F);
-            this.txtNome.Location = new Point(19, 48);
+            this.txtNome.BackColor = Color.White;
+            this.txtNome.BorderStyle = BorderStyle.FixedSingle;
+            this.txtNome.Font = new Font("Segoe UI", 9.75F);
+            this.txtNome.ForeColor = Color.FromArgb(15, 23, 42);
+            this.txtNome.Location = new Point(24, 30);
             this.txtNome.MaxLength = 150;
             this.txtNome.Name = "txtNome";
-            this.txtNome.Size = new Size(442, 24);
+            this.txtNome.Size = new Size(492, 25);
             this.txtNome.TabIndex = 2;
             this.txtNome.KeyPress += new KeyPressEventHandler(this.TxtNome_KeyPress);
             this.txtNome.TextChanged += new System.EventHandler(this.TxtNome_TextChanged);
@@ -157,20 +208,24 @@ namespace OCSCadastroApp
             // lblPatrimonio
             // 
             this.lblPatrimonio.AutoSize = true;
-            this.lblPatrimonio.Font = new Font("Segoe UI", 9F);
-            this.lblPatrimonio.Location = new Point(16, 80);
+            this.lblPatrimonio.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblPatrimonio.ForeColor = Color.FromArgb(51, 65, 85);
+            this.lblPatrimonio.Location = new Point(24, 64);
             this.lblPatrimonio.Name = "lblPatrimonio";
-            this.lblPatrimonio.Size = new Size(185, 15);
-            this.lblPatrimonio.Text = "Numero de Patrimonio (Somente Numeros):";
+            this.lblPatrimonio.Size = new Size(111, 13);
+            this.lblPatrimonio.Text = "Nº DE PATRIMÔNIO";
 
             // 
             // txtPatrimonio
             // 
-            this.txtPatrimonio.Font = new Font("Segoe UI", 9.5F);
-            this.txtPatrimonio.Location = new Point(19, 100);
+            this.txtPatrimonio.BackColor = Color.White;
+            this.txtPatrimonio.BorderStyle = BorderStyle.FixedSingle;
+            this.txtPatrimonio.Font = new Font("Segoe UI", 9.75F);
+            this.txtPatrimonio.ForeColor = Color.FromArgb(15, 23, 42);
+            this.txtPatrimonio.Location = new Point(24, 82);
             this.txtPatrimonio.MaxLength = 50;
             this.txtPatrimonio.Name = "txtPatrimonio";
-            this.txtPatrimonio.Size = new Size(442, 24);
+            this.txtPatrimonio.Size = new Size(492, 25);
             this.txtPatrimonio.TabIndex = 3;
             this.txtPatrimonio.KeyPress += new KeyPressEventHandler(this.TxtPatrimonio_KeyPress);
             this.txtPatrimonio.TextChanged += new System.EventHandler(this.TxtPatrimonio_TextChanged);
@@ -179,123 +234,201 @@ namespace OCSCadastroApp
             // lblSetor
             // 
             this.lblSetor.AutoSize = true;
-            this.lblSetor.Font = new Font("Segoe UI", 9F);
-            this.lblSetor.Location = new Point(16, 132);
+            this.lblSetor.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblSetor.ForeColor = Color.FromArgb(51, 65, 85);
+            this.lblSetor.Location = new Point(24, 116);
             this.lblSetor.Name = "lblSetor";
-            this.lblSetor.Size = new Size(125, 15);
-            this.lblSetor.Text = "Setor / Departamento:";
+            this.lblSetor.Size = new Size(140, 13);
+            this.lblSetor.Text = "SETOR / DEPARTAMENTO";
 
             // 
             // txtSetor
             // 
-            this.txtSetor.Font = new Font("Segoe UI", 9.5F);
-            this.txtSetor.Location = new Point(19, 152);
+            this.txtSetor.BackColor = Color.White;
+            this.txtSetor.BorderStyle = BorderStyle.FixedSingle;
+            this.txtSetor.Font = new Font("Segoe UI", 9.75F);
+            this.txtSetor.ForeColor = Color.FromArgb(15, 23, 42);
+            this.txtSetor.Location = new Point(24, 134);
             this.txtSetor.MaxLength = 100;
             this.txtSetor.Name = "txtSetor";
-            this.txtSetor.Size = new Size(442, 24);
+            this.txtSetor.Size = new Size(492, 25);
             this.txtSetor.TabIndex = 4;
 
             // 
-            // grpSistema
+            // panelSysInfo
             // 
-            this.grpSistema.Controls.Add(this.lblSysSO);
-            this.grpSistema.Controls.Add(this.lblSysSerial);
-            this.grpSistema.Controls.Add(this.lblSysUsuario);
-            this.grpSistema.Controls.Add(this.lblSysHostname);
-            this.grpSistema.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
-            this.grpSistema.ForeColor = Color.FromArgb(70, 70, 70);
-            this.grpSistema.Location = new Point(20, 285);
-            this.grpSistema.Name = "grpSistema";
-            this.grpSistema.Size = new Size(480, 85);
-            this.grpSistema.TabIndex = 5;
-            this.grpSistema.TabStop = false;
-            this.grpSistema.Text = " Informacoes Tecnicas Detectadas ";
+            this.panelSysInfo.BackColor = Color.FromArgb(255, 255, 255);
+            this.panelSysInfo.BorderStyle = BorderStyle.FixedSingle;
+            this.panelSysInfo.Controls.Add(this.lblValSO);
+            this.panelSysInfo.Controls.Add(this.lblTagSO);
+            this.panelSysInfo.Controls.Add(this.lblValSerial);
+            this.panelSysInfo.Controls.Add(this.lblTagSerial);
+            this.panelSysInfo.Controls.Add(this.lblValUsuario);
+            this.panelSysInfo.Controls.Add(this.lblTagUsuario);
+            this.panelSysInfo.Controls.Add(this.lblValHostname);
+            this.panelSysInfo.Controls.Add(this.lblTagHostname);
+            this.panelSysInfo.Controls.Add(this.lblSysTitle);
+            this.panelSysInfo.Location = new Point(24, 172);
+            this.panelSysInfo.Name = "panelSysInfo";
+            this.panelSysInfo.Size = new Size(492, 94);
+            this.panelSysInfo.TabIndex = 5;
 
             // 
-            // lblSysHostname
+            // lblSysTitle
             // 
-            this.lblSysHostname.AutoSize = true;
-            this.lblSysHostname.Font = new Font("Segoe UI", 8.25F);
-            this.lblSysHostname.Location = new Point(16, 20);
-            this.lblSysHostname.Name = "lblSysHostname";
-            this.lblSysHostname.Size = new Size(62, 13);
-            this.lblSysHostname.Text = "Hostname: ";
+            this.lblSysTitle.AutoSize = true;
+            this.lblSysTitle.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            this.lblSysTitle.ForeColor = Color.FromArgb(148, 163, 184); // Slate 400
+            this.lblSysTitle.Location = new Point(10, 8);
+            this.lblSysTitle.Name = "lblSysTitle";
+            this.lblSysTitle.Size = new Size(182, 12);
+            this.lblSysTitle.Text = "INFORMAÇÕES TÉCNICAS DETECTADAS";
 
             // 
-            // lblSysUsuario
+            // lblTagHostname
             // 
-            this.lblSysUsuario.AutoSize = true;
-            this.lblSysUsuario.Font = new Font("Segoe UI", 8.25F);
-            this.lblSysUsuario.Location = new Point(240, 20);
-            this.lblSysUsuario.Name = "lblSysUsuario";
-            this.lblSysUsuario.Size = new Size(76, 13);
-            this.lblSysUsuario.Text = "Usuario Atual: ";
+            this.lblTagHostname.AutoSize = true;
+            this.lblTagHostname.Font = new Font("Segoe UI", 7.5F);
+            this.lblTagHostname.ForeColor = Color.FromArgb(100, 116, 139);
+            this.lblTagHostname.Location = new Point(10, 27);
+            this.lblTagHostname.Name = "lblTagHostname";
+            this.lblTagHostname.Size = new Size(59, 12);
+            this.lblTagHostname.Text = "HOSTNAME:";
 
             // 
-            // lblSysSerial
+            // lblValHostname
             // 
-            this.lblSysSerial.AutoSize = true;
-            this.lblSysSerial.Font = new Font("Segoe UI", 8.25F);
-            this.lblSysSerial.Location = new Point(16, 40);
-            this.lblSysSerial.Name = "lblSysSerial";
-            this.lblSysSerial.Size = new Size(68, 13);
-            this.lblSysSerial.Text = "Serial BIOS: ";
+            this.lblValHostname.AutoSize = true;
+            this.lblValHostname.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblValHostname.ForeColor = Color.FromArgb(30, 41, 59);
+            this.lblValHostname.Location = new Point(10, 41);
+            this.lblValHostname.Name = "lblValHostname";
+            this.lblValHostname.Size = new Size(24, 13);
+            this.lblValHostname.Text = "---";
 
             // 
-            // lblSysSO
+            // lblTagUsuario
             // 
-            this.lblSysSO.AutoSize = true;
-            this.lblSysSO.Font = new Font("Segoe UI", 8.25F);
-            this.lblSysSO.Location = new Point(16, 60);
-            this.lblSysSO.Name = "lblSysSO";
-            this.lblSysSO.Size = new Size(99, 13);
-            this.lblSysSO.Text = "Sistema Operacional: ";
+            this.lblTagUsuario.AutoSize = true;
+            this.lblTagUsuario.Font = new Font("Segoe UI", 7.5F);
+            this.lblTagUsuario.ForeColor = Color.FromArgb(100, 116, 139);
+            this.lblTagUsuario.Location = new Point(250, 27);
+            this.lblTagUsuario.Name = "lblTagUsuario";
+            this.lblTagUsuario.Size = new Size(81, 12);
+            this.lblTagUsuario.Text = "USUÁRIO ATUAL:";
+
+            // 
+            // lblValUsuario
+            // 
+            this.lblValUsuario.AutoSize = true;
+            this.lblValUsuario.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblValUsuario.ForeColor = Color.FromArgb(30, 41, 59);
+            this.lblValUsuario.Location = new Point(250, 41);
+            this.lblValUsuario.Name = "lblValUsuario";
+            this.lblValUsuario.Size = new Size(24, 13);
+            this.lblValUsuario.Text = "---";
+
+            // 
+            // lblTagSerial
+            // 
+            this.lblTagSerial.AutoSize = true;
+            this.lblTagSerial.Font = new Font("Segoe UI", 7.5F);
+            this.lblTagSerial.ForeColor = Color.FromArgb(100, 116, 139);
+            this.lblTagSerial.Location = new Point(10, 59);
+            this.lblTagSerial.Name = "lblTagSerial";
+            this.lblTagSerial.Size = new Size(69, 12);
+            this.lblTagSerial.Text = "SERIAL BIOS:";
+
+            // 
+            // lblValSerial
+            // 
+            this.lblValSerial.AutoSize = true;
+            this.lblValSerial.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblValSerial.ForeColor = Color.FromArgb(30, 41, 59);
+            this.lblValSerial.Location = new Point(10, 73);
+            this.lblValSerial.Name = "lblValSerial";
+            this.lblValSerial.Size = new Size(24, 13);
+            this.lblValSerial.Text = "---";
+
+            // 
+            // lblTagSO
+            // 
+            this.lblTagSO.AutoSize = true;
+            this.lblTagSO.Font = new Font("Segoe UI", 7.5F);
+            this.lblTagSO.ForeColor = Color.FromArgb(100, 116, 139);
+            this.lblTagSO.Location = new Point(250, 59);
+            this.lblTagSO.Name = "lblTagSO";
+            this.lblTagSO.Size = new Size(117, 12);
+            this.lblTagSO.Text = "SISTEMA OPERACIONAL:";
+
+            // 
+            // lblValSO
+            // 
+            this.lblValSO.AutoSize = true;
+            this.lblValSO.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblValSO.ForeColor = Color.FromArgb(30, 41, 59);
+            this.lblValSO.Location = new Point(250, 73);
+            this.lblValSO.Name = "lblValSO";
+            this.lblValSO.Size = new Size(24, 13);
+            this.lblValSO.Text = "---";
 
             // 
             // panelAviso
             // 
-            this.panelAviso.BackColor = Color.FromArgb(254, 243, 199);
+            this.panelAviso.BackColor = Color.FromArgb(254, 243, 199); // Amber 100
             this.panelAviso.BorderStyle = BorderStyle.FixedSingle;
+            this.panelAviso.Controls.Add(this.lblAvisoDescricao);
+            this.panelAviso.Controls.Add(this.lblAvisoTitulo);
             this.panelAviso.Controls.Add(this.lblAvisoIcon);
-            this.panelAviso.Controls.Add(this.lblAvisoPrazo);
-            this.panelAviso.Location = new Point(20, 376);
+            this.panelAviso.Location = new Point(24, 276);
             this.panelAviso.Name = "panelAviso";
-            this.panelAviso.Size = new Size(480, 52);
+            this.panelAviso.Size = new Size(492, 58);
             this.panelAviso.TabIndex = 6;
 
             // 
             // lblAvisoIcon
             // 
-            this.lblAvisoIcon.AutoSize = true;
             this.lblAvisoIcon.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            this.lblAvisoIcon.ForeColor = Color.FromArgb(180, 83, 9);
+            this.lblAvisoIcon.ForeColor = Color.FromArgb(180, 83, 9); // Amber 700
             this.lblAvisoIcon.Location = new Point(8, 14);
             this.lblAvisoIcon.Name = "lblAvisoIcon";
-            this.lblAvisoIcon.Size = new Size(26, 21);
-            this.lblAvisoIcon.Text = "[!]";
+            this.lblAvisoIcon.Size = new Size(28, 28);
+            this.lblAvisoIcon.Text = "ℹ";
+            this.lblAvisoIcon.TextAlign = ContentAlignment.MiddleCenter;
 
             // 
-            // lblAvisoPrazo
+            // lblAvisoTitulo
             // 
-            this.lblAvisoPrazo.Font = new Font("Segoe UI", 8.5F);
-            this.lblAvisoPrazo.ForeColor = Color.FromArgb(120, 53, 15);
-            this.lblAvisoPrazo.Location = new Point(36, 4);
-            this.lblAvisoPrazo.Name = "lblAvisoPrazo";
-            this.lblAvisoPrazo.Size = new Size(435, 42);
-            this.lblAvisoPrazo.Text = "Aviso: O preenchimento deste cadastro e necessario para o inventario corporativo.\nApós preenchido e enviado, essa janela não será mais exibida.";
-            this.lblAvisoPrazo.TextAlign = ContentAlignment.MiddleLeft;
+            this.lblAvisoTitulo.AutoSize = true;
+            this.lblAvisoTitulo.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            this.lblAvisoTitulo.ForeColor = Color.FromArgb(120, 53, 15); // Amber 900
+            this.lblAvisoTitulo.Location = new Point(38, 9);
+            this.lblAvisoTitulo.Name = "lblAvisoTitulo";
+            this.lblAvisoTitulo.Size = new Size(254, 13);
+            this.lblAvisoTitulo.Text = "Preenchimento do Inventário Corporativo Pendente";
+
+            // 
+            // lblAvisoDescricao
+            // 
+            this.lblAvisoDescricao.Font = new Font("Segoe UI", 7.75F);
+            this.lblAvisoDescricao.ForeColor = Color.FromArgb(146, 64, 14); // Amber 800
+            this.lblAvisoDescricao.Location = new Point(38, 25);
+            this.lblAvisoDescricao.Name = "lblAvisoDescricao";
+            this.lblAvisoDescricao.Size = new Size(442, 28);
+            this.lblAvisoDescricao.Text = "Restam X dias para se tornar obrigatório. Após gravado com sucesso, esta tela não será mais exibida.";
 
             // 
             // btnEnviar
             // 
-            this.btnEnviar.BackColor = Color.FromArgb(24, 134, 75);
+            this.btnEnviar.BackColor = Color.FromArgb(37, 99, 235); // Modern Royal Blue 600
             this.btnEnviar.Cursor = Cursors.Hand;
+            this.btnEnviar.FlatAppearance.BorderSize = 0;
             this.btnEnviar.FlatStyle = FlatStyle.Flat;
             this.btnEnviar.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
             this.btnEnviar.ForeColor = Color.White;
-            this.btnEnviar.Location = new Point(260, 436);
+            this.btnEnviar.Location = new Point(276, 344);
             this.btnEnviar.Name = "btnEnviar";
-            this.btnEnviar.Size = new Size(240, 36);
+            this.btnEnviar.Size = new Size(240, 38);
             this.btnEnviar.TabIndex = 7;
             this.btnEnviar.Text = "Gravar e Concluir";
             this.btnEnviar.UseVisualStyleBackColor = false;
@@ -304,15 +437,16 @@ namespace OCSCadastroApp
             // 
             // btnFechar
             // 
-            this.btnFechar.BackColor = Color.FromArgb(220, 224, 230);
+            this.btnFechar.BackColor = Color.FromArgb(241, 245, 249); // Slate 100
             this.btnFechar.Cursor = Cursors.Default;
             this.btnFechar.Enabled = false;
+            this.btnFechar.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
             this.btnFechar.FlatStyle = FlatStyle.Flat;
-            this.btnFechar.Font = new Font("Segoe UI", 8.5F);
-            this.btnFechar.ForeColor = Color.FromArgb(80, 80, 80);
-            this.btnFechar.Location = new Point(20, 436);
+            this.btnFechar.Font = new Font("Segoe UI", 8.75F);
+            this.btnFechar.ForeColor = Color.FromArgb(100, 116, 139);
+            this.btnFechar.Location = new Point(24, 344);
             this.btnFechar.Name = "btnFechar";
-            this.btnFechar.Size = new Size(230, 36);
+            this.btnFechar.Size = new Size(240, 38);
             this.btnFechar.TabIndex = 8;
             this.btnFechar.Text = "Fechar (10s)";
             this.btnFechar.UseVisualStyleBackColor = false;
@@ -322,10 +456,10 @@ namespace OCSCadastroApp
             // lblStatus
             // 
             this.lblStatus.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
-            this.lblStatus.ForeColor = Color.FromArgb(90, 90, 90);
-            this.lblStatus.Location = new Point(20, 477);
+            this.lblStatus.ForeColor = Color.FromArgb(100, 116, 139);
+            this.lblStatus.Location = new Point(24, 388);
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new Size(480, 18);
+            this.lblStatus.Size = new Size(492, 18);
             this.lblStatus.TextAlign = ContentAlignment.MiddleCenter;
 
             // 
@@ -339,14 +473,9 @@ namespace OCSCadastroApp
             // 
             this.AutoScaleDimensions = new SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
-            this.BackColor = Color.FromArgb(246, 248, 250);
-            this.ClientSize = new Size(520, 502);
-            this.Controls.Add(this.lblStatus);
-            this.Controls.Add(this.btnFechar);
-            this.Controls.Add(this.btnEnviar);
-            this.Controls.Add(this.panelAviso);
-            this.Controls.Add(this.grpSistema);
-            this.Controls.Add(this.grpUsuario);
+            this.BackColor = Color.White;
+            this.ClientSize = new Size(540, 490);
+            this.Controls.Add(this.panelContent);
             this.Controls.Add(this.panelHeader);
             this.Font = new Font("Segoe UI", 9F);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -354,15 +483,15 @@ namespace OCSCadastroApp
             this.MinimizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.Text = "Inventario de Equipamento - OCS";
+            this.Text = "Inventário Corporativo — OCS Inventory";
             this.FormClosing += new FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.panelHeader.ResumeLayout(false);
             this.panelHeader.PerformLayout();
-            this.grpUsuario.ResumeLayout(false);
-            this.grpUsuario.PerformLayout();
-            this.grpSistema.ResumeLayout(false);
-            this.grpSistema.PerformLayout();
+            this.panelContent.ResumeLayout(false);
+            this.panelContent.PerformLayout();
+            this.panelSysInfo.ResumeLayout(false);
+            this.panelSysInfo.PerformLayout();
             this.panelAviso.ResumeLayout(false);
             this.panelAviso.PerformLayout();
             this.ResumeLayout(false);

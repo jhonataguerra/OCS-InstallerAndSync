@@ -24,51 +24,49 @@ namespace OCSCadastroApp
         {
             try
             {
-                // 1. Coleta dados de hardware e sistema
+                // 1. Coleta automática das informações de hardware e sistema
                 _sysData = SystemInfoCollector.Collect();
 
-                lblSysHostname.Text = "Hostname: " + _sysData.Hostname;
-                lblSysUsuario.Text = "Usuario Atual: " + _sysData.UsuarioWindows;
-                lblSysSerial.Text = "Serial BIOS: " + _sysData.SerialBios;
-                lblSysSO.Text = string.Format("SO: {0} ({1})", _sysData.VersaoWindows, _sysData.Arquitetura);
+                lblValHostname.Text = _sysData.Hostname;
+                lblValUsuario.Text = _sysData.UsuarioWindows;
+                lblValSerial.Text = _sysData.SerialBios;
+                lblValSO.Text = string.Format("{0} ({1})", _sysData.VersaoWindows, _sysData.Arquitetura);
 
-                // 2. Calculo do prazo de 7 dias e configuracao do cronometro
+                // 2. Cálculo do prazo de 7 dias e parametrização do cronômetro
                 DateTime dataPrimeiraExecucao = RegistryHelper.GetOrCreateFirstRunDate();
                 TimeSpan decorrido = DateTime.Now - dataPrimeiraExecucao;
                 int diasRestantes = AppConfig.DiasPrazoObrigatorio - (int)decorrido.TotalDays;
 
                 if (diasRestantes > 0)
                 {
-                    // Periodo de tolerancia (primeiros 7 dias)
+                    // Período de tolerância (primeiros 7 dias)
                     _isObrigatorio = false;
                     _segundosRestantes = AppConfig.SegundosBloqueioNormal; // 10 segundos
 
-                    panelAviso.BackColor = Color.FromArgb(254, 243, 199);
-                    panelAviso.BorderStyle = BorderStyle.FixedSingle;
-                    lblAvisoIcon.Text = "[!]";
-                    lblAvisoIcon.ForeColor = Color.FromArgb(180, 83, 9);
-                    lblAvisoPrazo.ForeColor = Color.FromArgb(120, 53, 15);
-                    lblAvisoPrazo.Text = string.Format(
-                        "Preenchimento necessário ({0} dia(s) restantes para se tornar obrigatório).\nApós preenchido e enviado, essa janela não será mais exibida.",
-                        diasRestantes
-                    );
+                    panelAviso.BackColor = Color.FromArgb(254, 243, 199); // Amber 100
+                    lblAvisoIcon.Text = "ℹ";
+                    lblAvisoIcon.ForeColor = Color.FromArgb(180, 83, 9); // Amber 700
+                    lblAvisoTitulo.ForeColor = Color.FromArgb(120, 53, 15); // Amber 900
+                    lblAvisoTitulo.Text = string.Format("Preenchimento Pendente ({0} dia(s) restantes para se tornar obrigatório)", diasRestantes);
+                    lblAvisoDescricao.ForeColor = Color.FromArgb(146, 64, 14); // Amber 800
+                    lblAvisoDescricao.Text = "Por favor, identifique seu equipamento. Após enviado com sucesso, esta tela não será mais exibida.";
                 }
                 else
                 {
-                    // Prazo expirado: preenchimento se torna obrigatorio (bloqueio de 2 minutos)
+                    // Prazo expirado: preenchimento torna-se obrigatório (bloqueio de 2 minutos)
                     _isObrigatorio = true;
-                    _segundosRestantes = AppConfig.SegundosBloqueioObrigatorio; // 120 segundos (2 min)
+                    _segundosRestantes = AppConfig.SegundosBloqueioObrigatorio; // 120 segundos
 
-                    panelAviso.BackColor = Color.FromArgb(254, 226, 226);
-                    panelAviso.BorderStyle = BorderStyle.FixedSingle;
-                    lblAvisoIcon.Text = "[X]";
-                    lblAvisoIcon.ForeColor = Color.FromArgb(185, 28, 28);
-                    lblAvisoPrazo.ForeColor = Color.FromArgb(153, 27, 27);
-                    lblAvisoPrazo.Font = new Font(lblAvisoPrazo.Font, FontStyle.Bold);
-                    lblAvisoPrazo.Text = "ATENÇÃO: Prazo expirado! O preenchimento agora é OBRIGATÓRIO.\nApós preenchido e enviado, essa janela não será mais exibida.";
+                    panelAviso.BackColor = Color.FromArgb(254, 226, 226); // Rose 100
+                    lblAvisoIcon.Text = "⚠";
+                    lblAvisoIcon.ForeColor = Color.FromArgb(185, 28, 28); // Rose 700
+                    lblAvisoTitulo.ForeColor = Color.FromArgb(153, 27, 27); // Rose 900
+                    lblAvisoTitulo.Text = "Atenção: O prazo de tolerância expirou e o cadastro tornou-se OBRIGATÓRIO";
+                    lblAvisoDescricao.ForeColor = Color.FromArgb(153, 27, 27); // Rose 900
+                    lblAvisoDescricao.Text = "Identifique seu equipamento agora. Após preenchido e gravado, esta janela não será mais exibida.";
                 }
 
-                // Inicia o cronometro de contagem regressiva para permitir fechar
+                // Inicializa o botão de fechar com a contagem regressiva
                 btnFechar.Text = string.Format("Fechar ({0}s)", _segundosRestantes);
                 btnFechar.Enabled = false;
                 timerBloqueio.Start();
@@ -100,13 +98,14 @@ namespace OCSCadastroApp
             }
             else
             {
-                // Tempo esgotado: habilita o botao de fechar temporariamente
+                // Tempo encerrado: habilita fechamento temporário
                 timerBloqueio.Stop();
                 _podeFechar = true;
                 btnFechar.Text = "Fechar Temporariamente";
                 btnFechar.Enabled = true;
                 btnFechar.Cursor = Cursors.Hand;
-                btnFechar.ForeColor = Color.FromArgb(50, 50, 50);
+                btnFechar.BackColor = Color.FromArgb(226, 232, 240);
+                btnFechar.ForeColor = Color.FromArgb(30, 41, 59);
             }
         }
 
@@ -120,7 +119,6 @@ namespace OCSCadastroApp
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Se o usuario tentar fechar pelo 'X' antes do cronometro zerar
             if (!_podeFechar && e.CloseReason == CloseReason.UserClosing)
             {
                 e.Cancel = true;
@@ -130,16 +128,16 @@ namespace OCSCadastroApp
                     : string.Format("{0} segundo(s)", _segundosRestantes);
 
                 string msg = _isObrigatorio
-                    ? string.Format("O preenchimento e obrigatorio.\nAguarde mais {0} para poder fechar temporariamente.", tempoTexto)
-                    : string.Format("Aguarde a leitura do aviso ({0}) para poder fechar.", tempoTexto);
+                    ? string.Format("O preenchimento deste inventário é obrigatório.\nAguarde mais {0} para poder fechar temporariamente.", tempoTexto)
+                    : string.Format("Por favor, aguarde a leitura das instruções ({0}) para fechar.", tempoTexto);
 
-                MessageBox.Show(msg, "Aviso de Inventario", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(msg, "Inventário Corporativo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
-        #region Tratamento e Validacao de Campos
+        #region Validação e Filtragem de Campos
 
-        // Nome do Responsavel: Aceita apenas letras, espacos e caracteres de nome
+        // Nome do Responsável: Aceita exclusivamente letras, acentuação em PT-BR, espaços, hífens e apóstrofos
         private void TxtNome_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (char.IsControl(e.KeyChar)) return;
@@ -149,7 +147,7 @@ namespace OCSCadastroApp
                 return;
             }
 
-            e.Handled = true;
+            e.Handled = true; // Bloqueia números e símbolos
         }
 
         private void TxtNome_TextChanged(object sender, EventArgs e)
@@ -164,7 +162,7 @@ namespace OCSCadastroApp
             }
         }
 
-        // Numero de Patrimonio: Aceita estritamente numeros (digitos 0-9)
+        // Nº de Patrimônio: Aceita estritamente dígitos numéricos (0 a 9)
         private void TxtPatrimonio_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (char.IsControl(e.KeyChar)) return;
@@ -174,7 +172,7 @@ namespace OCSCadastroApp
                 return;
             }
 
-            e.Handled = true;
+            e.Handled = true; // Bloqueia letras e caracteres especiais
         }
 
         private void TxtPatrimonio_TextChanged(object sender, EventArgs e)
@@ -197,33 +195,33 @@ namespace OCSCadastroApp
             string patrimonio = txtPatrimonio.Text.Trim();
             string setor = txtSetor.Text.Trim();
 
-            // 1. Validacoes dos campos obrigatorios
+            // 1. Validação de preenchimento mínimo
             if (string.IsNullOrEmpty(nome) || nome.Length < 3)
             {
-                MessageBox.Show("Por favor, preencha o Nome do Responsável (somente letras, mínimo 3 caracteres).", "Campo Obrigatório", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Por favor, informe o Nome do Responsável (mínimo 3 caracteres).", "Campo Obrigatório", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtNome.Focus();
                 return;
             }
 
             if (string.IsNullOrEmpty(patrimonio))
             {
-                MessageBox.Show("Por favor, informe o Número de Patrimônio (somente números).", "Campo Obrigatório", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Por favor, informe o Nº de Patrimônio do equipamento.", "Campo Obrigatório", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtPatrimonio.Focus();
                 return;
             }
 
             if (string.IsNullOrEmpty(setor))
             {
-                MessageBox.Show("Por favor, informe o Setor ou Departamento.", "Campo Obrigatório", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Por favor, informe o Setor ou Local de trabalho.", "Campo Obrigatório", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtSetor.Focus();
                 return;
             }
 
-            // 2. Bloqueia botoes durante o envio
+            // 2. Bloqueia botões durante a transmissão
             btnEnviar.Enabled = false;
             btnEnviar.Text = "Gravando...";
-            lblStatus.Text = "Conectando ao servidor e registrando dados...";
-            lblStatus.ForeColor = Color.DarkBlue;
+            lblStatus.Text = "Transmitindo informações ao servidor de inventário...";
+            lblStatus.ForeColor = Color.FromArgb(30, 64, 175);
             Application.DoEvents();
 
             try
@@ -274,15 +272,15 @@ namespace OCSCadastroApp
                             string responseBody = reader.ReadToEnd();
                         }
 
-                        // 3. Sucesso confirmado pelo servidor: Grava flag definitiva local
+                        // 3. Sucesso confirmado: Grava flag definitiva local e encerra
                         RegistryHelper.MarcarCadastroConcluido(patrimonio, _sysData.UsuarioWindows);
 
                         _podeFechar = true;
                         timerBloqueio.Stop();
 
                         MessageBox.Show(
-                            "Cadastro do equipamento concluído com sucesso!\n\nOs dados foram vinculados ao inventário corporativo.",
-                            "Cadastro Concluído",
+                            "Cadastro de patrimônio concluído com sucesso!\n\nAs informações foram vinculadas ao inventário corporativo.",
+                            "Identificação Concluída",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information
                         );
@@ -293,7 +291,7 @@ namespace OCSCadastroApp
                     }
                     else
                     {
-                        throw new Exception("Servidor respondeu com código HTTP: " + (int)response.StatusCode);
+                        throw new Exception("O servidor respondeu com código HTTP: " + (int)response.StatusCode);
                     }
                 }
             }
@@ -306,14 +304,14 @@ namespace OCSCadastroApp
                     {
                         using (StreamReader r = new StreamReader(webEx.Response.GetResponseStream()))
                         {
-                            extraMsg = "\nResposta do servidor: " + r.ReadToEnd();
+                            extraMsg = "\nDetalhes do servidor: " + r.ReadToEnd();
                         }
                     }
                     catch { }
                 }
 
                 MessageBox.Show(
-                    "Não foi possível enviar os dados para o servidor.\nVerifique a conexão de rede e tente novamente." + extraMsg,
+                    "Não foi possível conectar ao servidor de inventário.\nVerifique sua conexão de rede e tente novamente." + extraMsg,
                     "Falha de Comunicação",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error

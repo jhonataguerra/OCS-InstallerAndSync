@@ -4,9 +4,23 @@ A aplicação [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/
 
 ---
 
-## 1. Regra de Negócio, Prazos e Forçamento de Preenchimento
+## 1. Interface Gráfica e Campos do Formulário
 
-A aplicação implementa uma política inteligente de incentivo e obrigatoriedade:
+A interface foi estruturada seguindo padrões modernos de design e tipografia em **Português (Brasil)**:
+
+* **Nome do Responsável (`txtNome`):**
+  * Aceita **exclusivamente letras** (incluindo caracteres acentuados `á, é, í, ó, ú, ã, õ, ç, ê, ô`), espaços, apóstrofo e hífen.
+  * Números e caracteres especiais são bloqueados na digitação e sanitizados automaticamente se colados.
+* **Nº de Patrimônio (`txtPatrimonio`):**
+  * Aceita **estritamente dígitos numéricos (`0` a `9`)**.
+* **Setor / Local (`txtSetor`):**
+  * Campo para indicação da lotação ou departamento do equipamento.
+* **Painel de Informações Técnicas:**
+  * Exibe em modo somente-leitura o Hostname, Usuário do Domínio, Serial da BIOS (com filtro de BIOS genérica) e Sistema Operacional.
+
+---
+
+## 2. Política de Prazos e Forçamento de Preenchimento
 
 ```text
 [ Execução no Logon ]
@@ -20,51 +34,35 @@ A aplicação implementa uma política inteligente de incentivo e obrigatoriedad
     ┌────┴───────────────────────────────┐
     ▼ (Dentro dos Primeiros 7 Dias)      ▼ (Após 7 Dias - Prazo Expirado)
 [ Aviso em Amarelo ]                 [ Aviso em Vermelho ]
-"Restam X dias para se tornar         "PRAZO EXPIRADO: O preenchimento
-obrigatório."                         agora é OBRIGATÓRIO."
-    │                                    │
-[ Cronômetro: 10 Segundos ]          [ Cronômetro: 2 Minutos (120s) ]
+"Preenchimento pendente ({0} dias).   "Atenção: O prazo expirou e
+Após enviado, esta tela não será      tornou-se OBRIGATÓRIO."
+mais exibida."                           │
+    │                                [ Cronômetro: 2 Minutos (120s) ]
+[ Cronômetro: 10 Segundos ]              │
     │                                    │
     └────────────────┬───────────────────┘
                      ▼
-[ Usuário preenche Nome (Só letras) e Patrimônio (Só números) ]
-                     │
-                     ▼
-[ Envia POST HTTP/JSON para API ]
+[ Envia POST HTTP/JSON com Token de Segurança (X-API-TOKEN) ]
                      │
         ┌────────────┴────────────┐
         ▼ (HTTP 200 OK)           ▼ (Falha de Rede / Erro 500)
-[ Grava Flag Definitiva ]   [ Exibe Erro ]
+[ Grava Flag Definitiva ]   [ Exibe Mensagem Amigável ]
 [ Encerra Aplicação    ]   [ NÃO grava Flag ]
                             [ Usuário tenta no próximo logon ]
 ```
 
 ---
 
-## 2. Validação Rigorosa de Campos
+## 3. Segurança e Distribuição Corporativa
 
-* **Nome do Responsável (`txtNome`):**
-  * Aceita **estritamente letras** (incluindo caracteres acentuados `á, é, í, ó, ú, ã, õ, ç`), espaços, apóstrofo e hífen.
-  * Teclas numéricas e símbolos especiais são rejeitados no teclado e sanitizados automaticamente caso colados via `Ctrl+V`.
-* **Número de Patrimônio (`txtPatrimonio`):**
-  * Aceita **estritamente números** (dígitos de `0` a `9`).
-  * Qualquer letra ou caractere especial é bloqueado no ato da digitação.
-
----
-
-## 3. Bloqueio Temporário de Fechamento
-
-* **Botão 'X' e Botão Fechar:**
-  * Durante a contagem regressiva (10s nos primeiros 7 dias ou 120s após os 7 dias), a tentativa de fechar a janela pelo 'X' ou pelo botão é bloqueada com aviso visual.
-  * O botão exibe a contagem regressiva em tempo real: `Fechar (10s)` ... `Fechar (1m 59s)`.
-  * Ao zerar o cronômetro, o botão torna-se ativo como **"Fechar Temporariamente"**, permitindo que o usuário feche caso realmente não possa preencher naquele exato momento.
-  * No próximo logon do usuário, a tela reaparecerá até que o cadastro seja gravado com sucesso no servidor.
+* **Token de Segurança Integrado:** A aplicação envia no cabeçalho HTTP o token criptográfico `X-API-TOKEN`, impedindo injeção de dados falsos por terceiros na rede.
+* **Distribuição via GPO:** Publique apenas o arquivo [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/CadastroPatrimonio.exe) no compartilhamento de logon (`\\SEU_DOMINIO\SYSVOL\...`).
 
 ---
 
 ## 4. Reset para Testes de Homologação
 
-Para testar o formulário novamente em uma máquina e resetar a data da primeira execução:
+Para reabrir o formulário em uma máquina de teste e zerar o contador:
 
 ```cmd
 reg delete "HKCU\Software\OCS_Inventario" /f
