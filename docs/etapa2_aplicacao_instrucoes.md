@@ -4,66 +4,71 @@ A aplicação [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/
 
 ---
 
-## 1. Regra de Negócio e Ciclo de Vida
+## 1. Regra de Negócio, Prazos e Forçamento de Preenchimento
+
+A aplicação implementa uma política inteligente de incentivo e obrigatoriedade:
 
 ```text
-[ Inicio do CadastroPatrimonio.exe ]
-               │
-               ▼
-[ Verifica Flag no Registro / Disco ]
- (HKLM / HKCU \Software\OCS_Inventario -> CadastroConcluido == 1)
-               │
-      ┌────────┴────────┐
-      ▼ (Sim)           ▼ (Não)
-[ Encerra Silencioso ]  [ Coleta WMI: Serial BIOS, SO, Arch, Hostname ]
-                        [ Exibe Formulário ao Usuário ]
-                                │
-                                ▼ (Usuário preenche Nome, Patrimônio, Setor)
-                        [ Envia POST HTTP/JSON para API ]
-                                │
-                        ┌───────┴────────┐
-                        ▼ (HTTP 200 OK)  ▼ (Falha de Rede / Erro 500)
-             [ Grava Flag Registro ]    [ Exibe Erro ao Usuário ]
-             [ Exibe Alerta Sucesso]    [ NÃO grava Flag ]
-             [ Encerra Aplicação   ]    [ Permite Nova Tentativa ]
+[ Execução no Logon ]
+         │
+         ▼
+[ Verifica Flag no Registro / Disco ] ──(Concluído == 1)──► [ Encerra em <10ms ]
+         │
+         ▼ (Não concluído)
+[ Calcula dias desde a 1ª Execução ]
+         │
+    ┌────┴───────────────────────────────┐
+    ▼ (Dentro dos Primeiros 7 Dias)      ▼ (Após 7 Dias - Prazo Expirado)
+[ Aviso em Amarelo ]                 [ Aviso em Vermelho ]
+"Restam X dias para se tornar         "PRAZO EXPIRADO: O preenchimento
+obrigatório."                         agora é OBRIGATÓRIO."
+    │                                    │
+[ Cronômetro: 10 Segundos ]          [ Cronômetro: 2 Minutos (120s) ]
+    │                                    │
+    └────────────────┬───────────────────┘
+                     ▼
+[ Usuário preenche Nome (Só letras) e Patrimônio (Só números) ]
+                     │
+                     ▼
+[ Envia POST HTTP/JSON para API ]
+                     │
+        ┌────────────┴────────────┐
+        ▼ (HTTP 200 OK)           ▼ (Falha de Rede / Erro 500)
+[ Grava Flag Definitiva ]   [ Exibe Erro ]
+[ Encerra Aplicação    ]   [ NÃO grava Flag ]
+                            [ Usuário tenta no próximo logon ]
 ```
 
 ---
 
-## 2. Estratégia de Distribuição via GPO
+## 2. Validação Rigorosa de Campos
 
-Como a aplicação necessita de **interação com o usuário** (preenchimento do formulário), sua execução deve ocorrer no contexto de logon:
-
-### Opção A — GPO de Logon de Usuário (Recomendada)
-1. No **GPMC**, edite a GPO aplicada aos usuários/computadores.
-2. Navegue até: `Configurações do Usuário` -> `Políticas` -> `Configurações do Windows` -> `Scripts (Logon/Logoff)` -> **Logon**.
-3. Aponte para o executável no compartilhamento de rede:
-   `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\CadastroPatrimonio.exe`
-4. Como a aplicação verifica o Registro logo na primeira linha de código (`Program.cs`), em logons subsequentes o `.exe` abre e fecha em menos de **10 milissegundos**, sem incomodar o usuário.
+* **Nome do Responsável (`txtNome`):**
+  * Aceita **estritamente letras** (incluindo caracteres acentuados `á, é, í, ó, ú, ã, õ, ç`), espaços, apóstrofo e hífen.
+  * Teclas numéricas e símbolos especiais são rejeitados no teclado e sanitizados automaticamente caso colados via `Ctrl+V`.
+* **Número de Patrimônio (`txtPatrimonio`):**
+  * Aceita **estritamente números** (dígitos de `0` a `9`).
+  * Qualquer letra ou caractere especial é bloqueado no ato da digitação.
 
 ---
 
-## 3. Como Recompilar
+## 3. Bloqueio Temporário de Fechamento
 
-Se você alterar o endereço da API em [AppConfig.cs](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/AppConfig.cs), basta executar o script [build.bat](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/build.bat):
-
-```cmd
-cd client_app
-build.bat
-```
-
-O script detecta automaticamente o compilador nativo `csc.exe` do Windows e gera o binário otimizado.
+* **Botão 'X' e Botão Fechar:**
+  * Durante a contagem regressiva (10s nos primeiros 7 dias ou 120s após os 7 dias), a tentativa de fechar a janela pelo 'X' ou pelo botão é bloqueada com aviso visual.
+  * O botão exibe a contagem regressiva em tempo real: `Fechar (10s)` ... `Fechar (1m 59s)`.
+  * Ao zerar o cronômetro, o botão torna-se ativo como **"Fechar Temporariamente"**, permitindo que o usuário feche caso realmente não possa preencher naquele exato momento.
+  * No próximo logon do usuário, a tela reaparecerá até que o cadastro seja gravado com sucesso no servidor.
 
 ---
 
 ## 4. Reset para Testes de Homologação
 
-Para testar o formulário novamente em uma máquina que já completou o cadastro, execute no CMD/Prompt de Comando:
+Para testar o formulário novamente em uma máquina e resetar a data da primeira execução:
 
 ```cmd
 reg delete "HKCU\Software\OCS_Inventario" /f
 reg delete "HKLM\Software\OCS_Inventario" /f
-del /f /q "%ProgramData%\OCS_Inventario\concluido.flag" 2>nul
-del /f /q "%LocalAppData%\OCS_Inventario\concluido.flag" 2>nul
+del /f /q "%ProgramData%\OCS_Inventario\*.*" 2>nul
+del /f /q "%LocalAppData%\OCS_Inventario\*.*" 2>nul
 ```
-Ao abrir o executável novamente, o formulário será exibido.
