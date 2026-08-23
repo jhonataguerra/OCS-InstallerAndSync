@@ -65,3 +65,5 @@ logs/
 
 # --- Arquivos de Orquestração / Rascunhos ---
 orquestrador_inicio.md
+
+.gitignore
