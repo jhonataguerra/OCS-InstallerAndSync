@@ -2,19 +2,18 @@
 rem ============================================================================
 rem PROJETO: Inventario e Identificacao de Maquinas OCS
 rem ETAPA 1: Script de Instalacao Silenciosa do OCS Inventory Agent 2.11
-rem COMPATIBILIDADE: Windows 7 (32/64 bits), Windows 10, Windows 11
+rem ARQUITETURA: Pacote Unico 32 bits (Compativel com Windows 7 a 11, 32 e 64 bits)
 rem RESTRICAO: 100% Batch / CMD (Zero dependencia de PowerShell)
 rem ============================================================================
 
 setlocal enabledelayedexpansion
 
 rem ============================================================================
-rem [1] CONFIGURACOES DO AMBIENTE (Ajuste conforme seu servidor OCS)
+rem [1] CONFIGURACOES DO AMBIENTE
 rem ============================================================================
-set "OCS_SERVER_URL=http://SEU_SERVIDOR_OCS/ocsinventory"
+set "OCS_SERVER_URL=http://192.168.15.20/ocsinventory"
 set "OCS_SSL=0"
-set "INSTALLER_32=OCS-Windows-Agent-Setup-x86.exe"
-set "INSTALLER_64=OCS-Windows-Agent-Setup-x64.exe"
+set "INSTALLER_NAME=OCS-Agent-2.11-Universal.exe"
 set "FORCE_REINSTALL=0"
 set "LOG_DIR=%SystemRoot%\Temp"
 set "LOG_FILE=%LOG_DIR%\ocs_agent_install.log"
@@ -30,16 +29,7 @@ echo [%DATE% %TIME%] INICIANDO VERIFICACAO DO OCS AGENT >> "%LOG_FILE%"
 echo [%DATE% %TIME%] Hostname: %COMPUTERNAME% >> "%LOG_FILE%"
 
 rem ============================================================================
-rem [3] DETECCAO DE ARQUITETURA (32 bits ou 64 bits)
-rem ============================================================================
-set "ARCH=32"
-if /i "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "ARCH=64"
-if /i "%PROCESSOR_ARCHITEW6432%"=="AMD64" set "ARCH=64"
-
-echo [%DATE% %TIME%] Arquitetura detectada: %ARCH% bits >> "%LOG_FILE%"
-
-rem ============================================================================
-rem [4] VERIFICACAO DE INSTALACAO EXISTENTE (IDEMPOTENCIA)
+rem [3] VERIFICACAO DE INSTALACAO EXISTENTE (IDEMPOTENCIA)
 rem ============================================================================
 if "%FORCE_REINSTALL%"=="0" (
     rem Verifica se o servico OCS Inventory ja existe
@@ -49,7 +39,7 @@ if "%FORCE_REINSTALL%"=="0" (
         goto END_SUCCESS_ALREADY_INSTALLED
     )
 
-    rem Verifica se o executavel padrao ja existe em Program Files
+    rem Verifica se o executavel padrao ja existe em Program Files (32 ou 64 bits)
     if exist "%ProgramFiles%\OCS Inventory Agent\OCSInventory.exe" (
         echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles. >> "%LOG_FILE%"
         goto END_SUCCESS_ALREADY_INSTALLED
@@ -61,14 +51,8 @@ if "%FORCE_REINSTALL%"=="0" (
 )
 
 rem ============================================================================
-rem [5] LOCALIZACAO DO INSTALADOR CORRETO
+rem [4] LOCALIZACAO DO INSTALADOR UNIFICADO (32 BITS)
 rem ============================================================================
-if "%ARCH%"=="64" (
-    set "INSTALLER_NAME=%INSTALLER_64%"
-) else (
-    set "INSTALLER_NAME=%INSTALLER_32%"
-)
-
 set "INSTALLER_PATH=%SCRIPT_DIR%%INSTALLER_NAME%"
 
 if not exist "%INSTALLER_PATH%" (
@@ -79,19 +63,20 @@ if not exist "%INSTALLER_PATH%" (
 echo [%DATE% %TIME%] Utilizando instalador: "%INSTALLER_PATH%" >> "%LOG_FILE%"
 
 rem ============================================================================
-rem [6] EXECUCAO SILENCIOSA DO INSTALADOR COM PARAMETRO /TAG
+rem [5] EXECUCAO SILENCIOSA DO INSTALADOR COM PARAMETRO /TAG
 rem ============================================================================
-rem Parametros OCS Agent 2.11:
+rem Parametros OCS Agent:
 rem /S           -> Modo silencioso
 rem /SERVER=...  -> URL do servidor OCS
-rem /TAG=...     -> Tag definida como o Hostname da maquina
-rem /NOSPLASH    -> Nao exibe tela inicial do instalador
-rem /NOW         -> Dispara inventario imediatamente apos instalacao
-rem /NO_SYSTRAY  -> Nao exibe icone na bandeja
-rem /SSL=...     -> 0 = HTTP / 1 = HTTPS com certificado
+rem /TAG=...     -> Tag definida dinamicamente com o Hostname da maquina
+rem /NOSPLASH    -> Nao exibe tela inicial
+rem /NOW         -> Dispara primeiro inventario imediatamente
+rem /NO_SYSTRAY  -> Oculta icone da bandeja do sistema
+rem /DEBUG=2     -> Ativa log detalhado no cliente
+rem /SSL=0       -> Conexao HTTP direta
 echo [%DATE% %TIME%] Executando instalador com TAG=%COMPUTERNAME%... >> "%LOG_FILE%"
 
-start /wait "" "%INSTALLER_PATH%" /S /SERVER=%OCS_SERVER_URL% /TAG=%COMPUTERNAME% /NOSPLASH /NOW /NO_SYSTRAY /SSL=%OCS_SSL%
+start /wait "" "%INSTALLER_PATH%" /S /NOSPLASH /NO_SYSTRAY /SERVER=%OCS_SERVER_URL% /SSL=%OCS_SSL% /DEBUG=2 /TAG=%COMPUTERNAME% /NOW
 set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
 
 echo [%DATE% %TIME%] Codigo de saida do instalador: %INSTALL_EXIT_CODE% >> "%LOG_FILE%"
@@ -101,7 +86,7 @@ if %INSTALL_EXIT_CODE% neq 0 (
 )
 
 rem ============================================================================
-rem [7] FORCAR ENVIO DO PRIMEIRO INVENTARIO (SE EXECUTAVEL DISPONIVEL)
+rem [6] FORCAR DISPARO DE INVENTARIO INICIAL
 rem ============================================================================
 set "OCS_EXE="
 if exist "%ProgramFiles%\OCS Inventory Agent\OCSInventory.exe" (
@@ -116,7 +101,7 @@ if defined OCS_EXE (
     start "" "%OCS_EXE%" /now
     echo [%DATE% %TIME%] Instalacao e disparo de inventario concluidos com sucesso. >> "%LOG_FILE%"
 ) else (
-    echo [%DATE% %TIME%] ATENCAO: Executavel nao localizado apos instalacao. Verifique instalador. >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] ATENCAO: Executavel nao localizado apos instalacao. >> "%LOG_FILE%"
 )
 
 goto FINISH
@@ -126,7 +111,7 @@ echo [%DATE% %TIME%] Nenhuma acao necessaria. OCS Agent ja esta em execucao. >> 
 goto FINISH
 
 :ERROR_MISSING_INSTALLER
-echo [%DATE% %TIME%] Falha na execucao: pacote instalador inexistente no caminho compartilhado. >> "%LOG_FILE%"
+echo [%DATE% %TIME%] Falha na execucao: pacote '%INSTALLER_NAME%' inexistente na pasta do script. >> "%LOG_FILE%"
 exit /b 1
 
 :FINISH

@@ -5,11 +5,11 @@
  */
 
 return [
-    'db_host' => '192.168.15.20',
+    'db_host' => '127.0.0.1',
     'db_port' => 3306,
     'db_name' => 'ocsweb',
     'db_user' => 'ocs',
-    'db_pass' => '123456',
+    'db_pass' => 'ocs',
     'db_charset' => 'utf8mb4',
     
     // Token de segurança opcional (se preenchido, a aplicação EXE enviará no cabeçalho ou payload)
