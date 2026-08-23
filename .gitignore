@@ -1,5 +1,67 @@
-# Arquivos ZIP gerados do sistema
-ocs_inventory_system_*.zip
+# ============================================================
+# OCS InstallerAndSync — .gitignore
+# ============================================================
 
-# Orquestrador inicial
+# --- Sistema Operacional & Arquivos Indesejados ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+ehthumbs.db
+$RECYCLE.BIN/
+*~
+*.swp
+*.swo
+
+# --- IDEs & Editores ---
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# VS Code
+.vscode/
+
+# JetBrains (Rider, PhpStorm, PyCharm)
+.idea/
+*.iml
+
+# --- Compilação & Runtimes Temporários ---
+# Pastas intermediárias de build do Visual Studio
+[Bb]in/
+[Oo]bj/
+*.pdb
+*.cache
+*.ilk
+*.aps
+TestResults/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# PHP
+/vendor/
+.phpunit.result.cache
+.phpunit.cache/
+
+# --- Logs & Temporários Locais ---
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+
+# --- Pacotes Compactados Gerados (Mantendo repositório leve) ---
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# --- Arquivos de Orquestração / Rascunhos ---
 orquestrador_inicio.md
