@@ -3,3 +3,5 @@ ocs_inventory_system_*.zip
 
 # Orquestrador inicial
 orquestrador_inicio.md
+
+.gitignore
