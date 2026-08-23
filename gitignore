@@ -1,0 +1,5 @@
+# Arquivos ZIP gerados do sistema
+ocs_inventory_system_*.zip
+
+# Orquestrador inicial
+orquestrador_inicio.md
