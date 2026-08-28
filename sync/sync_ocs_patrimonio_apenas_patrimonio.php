@@ -1,3 +1,4 @@
+```php
 <?php
 /**
  * ============================================================================
@@ -15,16 +16,10 @@
  *   1. Le os cadastros pendentes da tabela computadores_cadastro.
  *   2. Localiza a maquina no OCS atraves de hardware.NAME = hostname.
  *   3. Obtem o HARDWARE_ID correspondente.
- *   4. Monta a TAG dinamicamente conforme o prefixo do hostname:
- *        PAC -> PACO-{PATRIMONIO}
- *        PLA -> VIC-{PATRIMONIO}
- *        DES -> VIC-{PATRIMONIO}
- *        FAZ -> VIC-{PATRIMONIO}
- *        Outros -> LOCAL-{PATRIMONIO}
- *   5. Atualiza SOMENTE accountinfo.TAG.
- *   6. Nao altera hardware.NAME.
- *   7. Nao altera hardware.USERID.
- *   8. Nao altera hardware.TAG.
+ *   4. Atualiza SOMENTE accountinfo.TAG com o numero do patrimonio.
+ *   5. Nao altera hardware.NAME.
+ *   6. Nao altera hardware.USERID.
+ *   7. Nao altera hardware.TAG.
  * ============================================================================
  */
 
@@ -199,19 +194,22 @@ try {
 // [9] CONTADORES
 // ============================================================================
 
-    $contAtualizados    = 0;
-    $contJaAtualizados  = 0;
-    $contNaoLocalizados = 0;
-    $contSemAccountInfo = 0;
-    $contErros          = 0;
+    $contAtualizados      = 0;
+    $contJaAtualizados    = 0;
+    $contNaoLocalizados   = 0;
+    $contSemAccountInfo   = 0;
+    $contErros            = 0;
 
 
 // ============================================================================
 // [10] BUSCA DA MAQUINA NO OCS
 //
+// IMPORTANTE:
+// Aqui NAO utilizamos:
+//   hardware.TAG
+//   accountinfo.TAG
+//
 // A localizacao ocorre exclusivamente pelo hardware.NAME.
-// Nao sao consultados hardware.TAG ou accountinfo.TAG para localizar a
-// maquina.
 // ============================================================================
 
     $sqlBuscaOCS = "
@@ -228,6 +226,10 @@ try {
 
 // ============================================================================
 // [11] VERIFICACAO DO ACCOUNTINFO
+//
+// accountinfo deve possuir o registro correspondente ao HARDWARE_ID.
+//
+// Nao criamos automaticamente o registro aqui.
 // ============================================================================
 
     $sqlBuscaAccountInfo = "
@@ -268,6 +270,9 @@ try {
 
 // ============================================================================
 // [13] MARCACAO DO CADASTRO COMO SINCRONIZADO
+//
+// Esta alteracao ocorre na tabela do projeto,
+// e nao na tabela hardware do OCS.
 // ============================================================================
 
     $sqlUpdateCadastro = "
@@ -299,7 +304,6 @@ try {
             $item['numero_patrimonio']
         );
 
-
         // --------------------------------------------------------------------
         // Validacao basica
         // --------------------------------------------------------------------
@@ -330,39 +334,6 @@ try {
 
 
         // --------------------------------------------------------------------
-        // Determina a TAG dinamicamente a partir dos 3 primeiros caracteres
-        // do hostname.
-        //
-        // PAC -> PACO-{PATRIMONIO}
-        // PLA -> VIC-{PATRIMONIO}
-        // DES -> VIC-{PATRIMONIO}
-        // FAZ -> VIC-{PATRIMONIO}
-        // Outros -> LOCAL-{PATRIMONIO}
-        // --------------------------------------------------------------------
-
-        $prefixo = strtoupper(
-            substr($hostnameOrig, 0, 3)
-        );
-
-        switch ($prefixo) {
-
-            case 'PAC':
-                $tag = 'PACO-' . $patrimonio;
-                break;
-
-            case 'PLA':
-            case 'DES':
-            case 'FAZ':
-                $tag = 'VIC-' . $patrimonio;
-                break;
-
-            default:
-                $tag = 'LOCAL-' . $patrimonio;
-                break;
-        }
-
-
-        // --------------------------------------------------------------------
         // Localiza a maquina no OCS pelo hostname
         // --------------------------------------------------------------------
 
@@ -380,7 +351,7 @@ try {
         if (!$ocsMachine) {
 
             logMessage(
-                "[PENDENTE] Hostname '$hostnameOrig' (TAG calculada: '$tag') ainda nao foi localizado no OCS.",
+                "[PENDENTE] Hostname '$hostnameOrig' (Patrimonio: $patrimonio) ainda nao foi localizado no OCS.",
                 $logFile
             );
 
@@ -406,10 +377,6 @@ try {
                 $logFile
             );
 
-            logMessage(
-                "[TAG] Prefixo '$prefixo' -> TAG calculada '$tag'.",
-                $logFile
-            );
         }
 
 
@@ -427,7 +394,7 @@ try {
         if (!$accountInfo) {
 
             logMessage(
-                "[ERRO] OCS HARDWARE_ID #$ocsId ('$ocsNomeAtual') nao possui registro em accountinfo. TAG '$tag' nao sera atualizado.",
+                "[ERRO] OCS HARDWARE_ID #$ocsId ('$ocsNomeAtual') nao possui registro em accountinfo. TAG nao sera atualizado.",
                 $logFile
             );
 
@@ -450,14 +417,15 @@ try {
         // Verifica se o TAG ja esta correto
         // --------------------------------------------------------------------
 
-        if ($tagAtual === $tag) {
+        if ($tagAtual === $patrimonio) {
 
             if ($isVerbose) {
 
                 logMessage(
-                    "[JA SINCRONIZADO] OCS ID #$ocsId / Hostname '$ocsNomeAtual' ja possui TAG '$tag'.",
+                    "[JA SINCRONIZADO] OCS ID #$ocsId / Hostname '$ocsNomeAtual' ja possui TAG '$patrimonio'.",
                     $logFile
                 );
+
             }
 
             if (!$isDryRun) {
@@ -465,6 +433,7 @@ try {
                 $stmtUpdateCadastro->execute([
                     ':id' => $idCadastro
                 ]);
+
             }
 
             $contJaAtualizados++;
@@ -478,7 +447,7 @@ try {
         // --------------------------------------------------------------------
 
         logMessage(
-            "[ATUALIZANDO] OCS ID #$ocsId / Hostname '$ocsNomeAtual': accountinfo.TAG '$tagAtual' -> '$tag'.",
+            "[ATUALIZANDO] OCS ID #$ocsId / Hostname '$ocsNomeAtual': accountinfo.TAG '$tagAtual' -> '$patrimonio'.",
             $logFile
         );
 
@@ -486,13 +455,23 @@ try {
         if (!$isDryRun) {
 
             $stmtUpdateAccountInfo->execute([
-                ':tag'         => $tag,
+                ':tag'        => $patrimonio,
                 ':hardware_id' => $ocsId
             ]);
 
-            $stmtUpdateCadastro->execute([
-                ':id' => $idCadastro
-            ]);
+
+            // ---------------------------------------------------------------
+            // Confirma se o UPDATE realmente afetou o registro
+            // ---------------------------------------------------------------
+
+            if ($stmtUpdateAccountInfo->rowCount() >= 0) {
+
+                $stmtUpdateCadastro->execute([
+                    ':id' => $idCadastro
+                ]);
+
+            }
+
         }
 
 
@@ -535,7 +514,7 @@ try {
     );
 
     logMessage(
-        " - Erros de validacao:              $contErros",
+        " - Erros de validacao:               $contErros",
         $logFile
     );
 
@@ -569,5 +548,4 @@ try {
 
     exit(1);
 }
-
-?>
+```

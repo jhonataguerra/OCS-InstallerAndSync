@@ -247,6 +247,10 @@ namespace OCSCadastroApp
                 request.Timeout = 12000;
                 request.ReadWriteTimeout = 12000;
 
+                // Não utilizar o proxy configurado no Windows.
+                // A API está hospedada na rede interna.
+                request.Proxy = null;
+
                 try
                 {
                     ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072 | SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls;
@@ -297,21 +301,33 @@ namespace OCSCadastroApp
             }
             catch (WebException webEx)
             {
-                string extraMsg = "";
+                string mensagem = webEx.Message;
+
                 if (webEx.Response != null)
                 {
                     try
                     {
-                        using (StreamReader r = new StreamReader(webEx.Response.GetResponseStream()))
+                        using (HttpWebResponse errorResponse =
+                            (HttpWebResponse)webEx.Response)
                         {
-                            extraMsg = "\nDetalhes do servidor: " + r.ReadToEnd();
+                            mensagem += Environment.NewLine +
+                                        Environment.NewLine +
+                                        "Código HTTP: " +
+                                        (int)errorResponse.StatusCode +
+                                        " - " +
+                                        errorResponse.StatusDescription;
                         }
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 MessageBox.Show(
-                    "Não foi possível conectar ao servidor de inventário.\nVerifique sua conexão de rede e tente novamente." + extraMsg,
+                    "Não foi possível conectar ao servidor de inventário." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    mensagem,
                     "Falha de Comunicação",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
