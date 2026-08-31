@@ -28,7 +28,7 @@ O projeto conecta **3 etapas integradas**:
        │
        ├─► (1. GPO Startup) ──► install_ocs_agent.bat (Batch Puro, Sem PowerShell)
        │                           │
-       │                           └─► Instala OCS-Agent-2.11-Universal.exe (/TAG=%COMPUTERNAME%)
+       │                           └─► Detecta x86/x64 e instala OCS-Agent-2.11-x86.exe ou OCS-Agent-2.11-x64.exe (/TAG=%COMPUTERNAME%)
        │                                     │
        │                                     ▼
        │                              [ OCS Server ] ◄──────────────────────────────┐
@@ -50,8 +50,10 @@ O projeto conecta **3 etapas integradas**:
                                    │                                                │
                                    ▼                                                │
        (3. Cron no Servidor) ──► sync_ocs_patrimonio.php ───────────────────────────┘
-                                 Relaciona Hostname -> Renomeia para HOSTNAME-PATRIMONIO
-                                 Exemplo: PC-FINANCEIRO-01-12345
+                                 Localiza por hardware.NAME = hostname
+                                 Atualiza SOMENTE accountinfo.TAG = prefixo + patrimonio
+                                 PAC → PACO-{patrimonio} | PLA/DES/FAZ → VIC-{patrimonio} | outros → LOCAL-{patrimonio}
+                                 Exemplo: PLA-PC01-123456 → VIC-123456 | hardware.NAME preservado
 ```
 
 ---
@@ -100,22 +102,32 @@ orchestration_ocs_inventory_system/
 
 ## 🚀 Guia de Implantação Passo a Passo
 
-### Passo 1: Gerar o Pacote OCS no OcsPackager
-1. Baixe o instalador oficial de 32 bits: `OCS-Windows-Agent-Setup-x86.exe` (v2.11.x).
+### Passo 1: Gerar os Pacotes OCS no OcsPackager (Dual x86/x64)
+> Gere **dois pacotes** separados — o `install_ocs_agent.bat` detecta a arquitetura e escolhe automaticamente.
+
+**Pacote 32 bits:**
+1. Extraia `OCS-Windows-Agent-2.11.0.1_x86.zip` de `utils/Agents/`.
 2. Abra o **OcsPackager.exe** e configure:
-   * **Exe file:** Selecione `OCS-Windows-Agent-Setup-x86.exe`
+   * **Exe file:** `OCS-Windows-Agent-Setup-x86.exe`
    * **Certificate / Other files:** *(Deixe em branco)*
    * **Command line options:**
      ```text
-     /S /NOSPLASH /NO_SYSTRAY /SERVER=http://192.168.15.20/ocsinventory /SSL=0 /DEBUG=2 /TAG=%COMPUTERNAME% /NOW
+     /S /NOSPLASH /NO_SYSTRAY /SERVER=http://192.168.2.48/ocsinventory /SSL=0 /DEBUG=2 /TAG=%COMPUTERNAME% /NOW
      ```
-   * **Label:** `OCS-Agent-2.11-Universal`
-3. Gere o pacote e renomeie o `.exe` gerado para: **`OCS-Agent-2.11-Universal.exe`**.
+   * **Label:** `OCS-Agent-2.11-x86`
+3. Gere e renomeie para **`OCS-Agent-2.11-x86.exe`**.
+
+**Pacote 64 bits:**
+1. Extraia `OCS-Windows-Agent-2.11.0.1_x64.zip` de `utils/Agents/`.
+2. Mesma configuração, com **Exe file:** `OCS-Windows-Agent-Setup-x64.exe` e **Label:** `OCS-Agent-2.11-x64`.
+3. Gere e renomeie para **`OCS-Agent-2.11-x64.exe`**.
+
+> Parâmetros completos em `utils/Parametros Packager.txt` (`http://192.168.2.48/ocsinventory`).
 
 ---
 
 ### Passo 2: Distribuir o OCS Agent via GPO (Startup)
-1. Coloque o [install_ocs_agent.bat](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/scripts/install_ocs_agent.bat) e o `OCS-Agent-2.11-Universal.exe` na mesma pasta de rede compartilhada (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs`).
+1. Coloque o [install_ocs_agent.bat](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/scripts/install_ocs_agent.bat), o `OCS-Agent-2.11-x86.exe` e o `OCS-Agent-2.11-x64.exe` na mesma pasta de rede compartilhada (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs`).
 2. No **GPMC (Group Policy Management Console)**:
    * Edite a GPO de computadores.
    * Vá em: `Configurações do Computador` -> `Políticas` -> `Configurações do Windows` -> `Scripts (Inicialização/Encerramento)` -> **Inicialização (Startup)**.
@@ -169,7 +181,7 @@ orchestration_ocs_inventory_system/
    ```cron
    */10 * * * * /usr/bin/php /var/www/html/cadastro_api/sync/sync_ocs_patrimonio.php > /dev/null 2>&1
    ```
-4. O script localiza os computadores pelo **Hostname** e renomeia o campo de identificação no OCS para `HOSTNAME-PATRIMONIO` (preservando todo o histórico e peças de hardware).
+4. O script localiza pelo **Hostname** (`hardware.NAME`) e atualiza **somente `accountinfo.TAG`** para `PREFIXO-PATRIMONIO` (`PAC→PACO-`, `PLA/DES/FAZ→VIC-`, outros `LOCAL-`), preservando `hardware.NAME`, `hardware.USERID` e todo histórico de hardware/software. Ex.: `PLA-PC01 + 123456 → VIC-123456`. Suporta `--dry-run` e `--verbose`.
 
 ---
 

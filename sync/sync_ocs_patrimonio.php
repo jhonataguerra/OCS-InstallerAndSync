@@ -2,51 +2,125 @@
 /**
  * ============================================================================
  * PROJETO: Inventario e Identificacao de Maquinas OCS
- * ETAPA 3: Script de Sincronizacao de Nomes (Hostname-Patrimonio) no OCS Server
+ * ETAPA 3: Script de Sincronizacao do Patrimonio no OCS Server
  * ============================================================================
  *
  * Modo de uso (CLI):
  *   php sync_ocs_patrimonio.php
  *   php sync_ocs_patrimonio.php --dry-run
  *   php sync_ocs_patrimonio.php --force
+ *   php sync_ocs_patrimonio.php --verbose
+ *
+ * FUNCIONAMENTO:
+ *   1. Le os cadastros pendentes da tabela computadores_cadastro.
+ *   2. Localiza a maquina no OCS atraves de hardware.NAME = hostname.
+ *   3. Obtem o HARDWARE_ID correspondente.
+ *   4. Monta a TAG dinamicamente conforme o prefixo do hostname:
+ *        PAC -> PACO-{PATRIMONIO}
+ *        PLA -> VIC-{PATRIMONIO}
+ *        DES -> VIC-{PATRIMONIO}
+ *        FAZ -> VIC-{PATRIMONIO}
+ *        Outros -> LOCAL-{PATRIMONIO}
+ *   5. Atualiza SOMENTE accountinfo.TAG.
+ *   6. Nao altera hardware.NAME.
+ *   7. Nao altera hardware.USERID.
+ *   8. Nao altera hardware.TAG.
+ * ============================================================================
  */
 
-// Garante execucao apenas via linha de comando ou script agendado
+// ============================================================================
+// [1] SOMENTE CLI
+// ============================================================================
+
 if (php_sapi_name() !== 'cli') {
     die("Este script deve ser executado exclusivamente via CLI.\n");
 }
 
+
+// ============================================================================
+// [2] CARREGAMENTO DA CONFIGURACAO
+// ============================================================================
+
 $configFile = __DIR__ . '/config_sync.php';
+
 if (!file_exists($configFile)) {
     die("[ERRO] Arquivo de configuracao '$configFile' nao encontrado.\n");
 }
 
 $config = require $configFile;
 
-// Leitura de argumentos de linha de comando
+
+// ============================================================================
+// [3] ARGUMENTOS DE LINHA DE COMANDO
+// ============================================================================
+
 $options = getopt('', ['dry-run', 'force', 'verbose']);
+
 $isDryRun = isset($options['dry-run']);
-$isForce  = isset($options['force']) || ($config['force_recheck_all'] ?? false);
+
+$isForce = isset($options['force'])
+    || ($config['force_recheck_all'] ?? false);
+
 $isVerbose = isset($options['verbose']);
 
-function logMessage($msg, $logFile = null) {
+
+// ============================================================================
+// [4] FUNCAO DE LOG
+// ============================================================================
+
+function logMessage($msg, $logFile = null)
+{
     $timestamp = date('Y-m-d H:i:s');
+
     $formatted = "[$timestamp] $msg\n";
+
     echo $formatted;
+
     if (!empty($logFile)) {
-        @file_put_contents($logFile, $formatted, FILE_APPEND);
+        @file_put_contents(
+            $logFile,
+            $formatted,
+            FILE_APPEND
+        );
     }
 }
 
+
+// ============================================================================
+// [5] CONFIGURACAO DO LOG
+// ============================================================================
+
 $logFile = $config['log_file'] ?? null;
 
-logMessage("==================================================================", $logFile);
-logMessage("INICIANDO PROCESSO DE SINCRONIZACAO OCS <-> PATRIMONIO", $logFile);
+
+// ============================================================================
+// [6] INICIO
+// ============================================================================
+
+logMessage(
+    "==================================================================",
+    $logFile
+);
+
+logMessage(
+    "INICIANDO PROCESSO DE SINCRONIZACAO OCS <-> PATRIMONIO",
+    $logFile
+);
+
 if ($isDryRun) {
-    logMessage("[MODO SIMULACAO / DRY-RUN ATIVADO - Nenhuma alteracao sera gravada]", $logFile);
+    logMessage(
+        "[MODO SIMULACAO / DRY-RUN ATIVADO - Nenhuma alteracao sera gravada]",
+        $logFile
+    );
 }
 
+
+// ============================================================================
+// [7] CONEXAO COM O BANCO
+// ============================================================================
+
 try {
+
     $dsn = sprintf(
         'mysql:host=%s;port=%d;dbname=%s;charset=%s',
         $config['db_host'],
@@ -55,134 +129,445 @@ try {
         $config['db_charset'] ?? 'utf8mb4'
     );
 
-    $pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+    $pdo = new PDO(
+        $dsn,
+        $config['db_user'],
+        $config['db_pass'],
+        [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false
+        ]
+    );
 
-    // 1. Busca cadastros pendentes de sincronizacao (ou todos se force estiver ativo)
-    $sqlCadastros = "SELECT id, hostname, numero_patrimonio, nome_completo, setor_local, usuario_windows, sincronizado_ocs 
-                     FROM `{$config['cadastro_table']}`";
-    
+    logMessage(
+        "Conexao com o banco '{$config['db_name']}' estabelecida.",
+        $logFile
+    );
+
+
+// ============================================================================
+// [8] BUSCA DOS CADASTROS
+// ============================================================================
+
+    $sqlCadastros = "
+        SELECT
+            id,
+            hostname,
+            numero_patrimonio,
+            nome_completo,
+            setor_local,
+            usuario_windows,
+            sincronizado_ocs
+        FROM `{$config['cadastro_table']}`
+    ";
+
     if (!$isForce) {
-        $sqlCadastros .= " WHERE sincronizado_ocs = 0";
+        $sqlCadastros .= "
+            WHERE sincronizado_ocs = 0
+        ";
     }
 
     $stmtCadastros = $pdo->query($sqlCadastros);
+
     $cadastros = $stmtCadastros->fetchAll();
 
     $totalEncontrados = count($cadastros);
-    logMessage("Registros de cadastro para processar: $totalEncontrados", $logFile);
+
+    logMessage(
+        "Registros de cadastro para processar: $totalEncontrados",
+        $logFile
+    );
 
     if ($totalEncontrados === 0) {
-        logMessage("Nenhum registro pendente de sincronizacao. Finalizando.", $logFile);
-        logMessage("==================================================================", $logFile);
+
+        logMessage(
+            "Nenhum registro pendente de sincronizacao. Finalizando.",
+            $logFile
+        );
+
+        logMessage(
+            "==================================================================",
+            $logFile
+        );
+
         exit(0);
     }
 
-    $contAtualizados = 0;
-    $contJaAtualizados = 0;
-    $contNaoLocalizados = 0;
 
-    // Prepared statements para busca no OCS
-    // Busca por:
-    // a) Nome exato original (ex: 'PC-FINANCEIRO-01')
-    // b) Nome ja formatado (ex: 'PC-FINANCEIRO-01-12345')
-    // c) Tag no accountinfo ou hardware (onde a Etapa 1 colocou o Hostname original)
-    $sqlBuscaOCS = "SELECT h.ID, h.NAME, h.USERID, h.TAG, a.TAG AS ACCOUNTINFO_TAG
-                    FROM `{$config['ocs_hardware_table']}` h
-                    LEFT JOIN `{$config['ocs_accountinfo_table']}` a ON h.ID = a.HARDWARE_ID
-                    WHERE UPPER(TRIM(h.NAME)) = UPPER(TRIM(:host1))
-                       OR UPPER(TRIM(h.NAME)) = UPPER(TRIM(:novo_nome))
-                       OR UPPER(TRIM(h.TAG))  = UPPER(TRIM(:host2))
-                       OR UPPER(TRIM(a.TAG))  = UPPER(TRIM(:host3))
-                    LIMIT 1";
+// ============================================================================
+// [9] CONTADORES
+// ============================================================================
+
+    $contAtualizados    = 0;
+    $contJaAtualizados  = 0;
+    $contNaoLocalizados = 0;
+    $contSemAccountInfo = 0;
+    $contErros          = 0;
+
+
+// ============================================================================
+// [10] BUSCA DA MAQUINA NO OCS
+//
+// A localizacao ocorre exclusivamente pelo hardware.NAME.
+// Nao sao consultados hardware.TAG ou accountinfo.TAG para localizar a
+// maquina.
+// ============================================================================
+
+    $sqlBuscaOCS = "
+        SELECT
+            h.ID,
+            h.NAME
+        FROM `{$config['ocs_hardware_table']}` h
+        WHERE UPPER(TRIM(h.NAME)) = UPPER(TRIM(:hostname))
+        LIMIT 1
+    ";
 
     $stmtBuscaOCS = $pdo->prepare($sqlBuscaOCS);
 
-    // Prepared statements para atualizacao no OCS
-    $sqlUpdateHardware = "UPDATE `{$config['ocs_hardware_table']}`
-                          SET `NAME` = :novo_nome" . 
-                          ($config['update_userid'] ? ", `USERID` = :usuario" : "") . 
-                          " WHERE `ID` = :id";
-    $stmtUpdateHardware = $pdo->prepare($sqlUpdateHardware);
 
-    // Prepared statement para marcar cadastro como sincronizado
-    $sqlUpdateCadastro = "UPDATE `{$config['cadastro_table']}`
-                          SET `sincronizado_ocs` = 1, `data_sincronizacao` = NOW()
-                          WHERE `id` = :id";
-    $stmtUpdateCadastro = $pdo->prepare($sqlUpdateCadastro);
+// ============================================================================
+// [11] VERIFICACAO DO ACCOUNTINFO
+// ============================================================================
+
+    $sqlBuscaAccountInfo = "
+        SELECT
+            HARDWARE_ID,
+            TAG
+        FROM `{$config['ocs_accountinfo_table']}`
+        WHERE HARDWARE_ID = :hardware_id
+        LIMIT 1
+    ";
+
+    $stmtBuscaAccountInfo = $pdo->prepare(
+        $sqlBuscaAccountInfo
+    );
+
+
+// ============================================================================
+// [12] ATUALIZACAO DO TAG
+//
+// ESTE E O UNICO UPDATE REALIZADO NO OCS.
+//
+// Nao alteramos:
+//   hardware.NAME
+//   hardware.USERID
+//   hardware.TAG
+// ============================================================================
+
+    $sqlUpdateAccountInfo = "
+        UPDATE `{$config['ocs_accountinfo_table']}`
+        SET `TAG` = :tag
+        WHERE `HARDWARE_ID` = :hardware_id
+    ";
+
+    $stmtUpdateAccountInfo = $pdo->prepare(
+        $sqlUpdateAccountInfo
+    );
+
+
+// ============================================================================
+// [13] MARCACAO DO CADASTRO COMO SINCRONIZADO
+// ============================================================================
+
+    $sqlUpdateCadastro = "
+        UPDATE `{$config['cadastro_table']}`
+        SET
+            `sincronizado_ocs` = 1,
+            `data_sincronizacao` = NOW()
+        WHERE `id` = :id
+    ";
+
+    $stmtUpdateCadastro = $pdo->prepare(
+        $sqlUpdateCadastro
+    );
+
+
+// ============================================================================
+// [14] PROCESSAMENTO DOS CADASTROS
+// ============================================================================
 
     foreach ($cadastros as $item) {
-        $idCadastro   = $item['id'];
-        $hostnameOrig = trim($item['hostname']);
-        $patrimonio   = trim($item['numero_patrimonio']);
-        $usuario      = trim($item['usuario_windows'] ?? $item['nome_completo']);
 
-        $separador    = $config['name_separator'] ?? '-';
-        $novoNome     = sprintf('%s%s%s', $hostnameOrig, $separador, $patrimonio);
+        $idCadastro = $item['id'];
 
-        // Executa busca no OCS
+        $hostnameOrig = trim(
+            $item['hostname']
+        );
+
+        $patrimonio = trim(
+            $item['numero_patrimonio']
+        );
+
+
+        // --------------------------------------------------------------------
+        // Validacao basica
+        // --------------------------------------------------------------------
+
+        if ($hostnameOrig === '') {
+
+            logMessage(
+                "[ERRO] Cadastro #$idCadastro possui hostname vazio.",
+                $logFile
+            );
+
+            $contErros++;
+
+            continue;
+        }
+
+        if ($patrimonio === '') {
+
+            logMessage(
+                "[ERRO] Cadastro #$idCadastro / Hostname '$hostnameOrig' possui patrimonio vazio.",
+                $logFile
+            );
+
+            $contErros++;
+
+            continue;
+        }
+
+
+        // --------------------------------------------------------------------
+        // Determina a TAG dinamicamente a partir dos 3 primeiros caracteres
+        // do hostname.
+        //
+        // PAC -> PACO-{PATRIMONIO}
+        // PLA -> VIC-{PATRIMONIO}
+        // DES -> VIC-{PATRIMONIO}
+        // FAZ -> VIC-{PATRIMONIO}
+        // Outros -> LOCAL-{PATRIMONIO}
+        // --------------------------------------------------------------------
+
+        $prefixo = strtoupper(
+            substr($hostnameOrig, 0, 3)
+        );
+
+        switch ($prefixo) {
+
+            case 'PAC':
+                $tag = 'PACO-' . $patrimonio;
+                break;
+
+            case 'PLA':
+            case 'DES':
+            case 'FAZ':
+                $tag = 'VIC-' . $patrimonio;
+                break;
+
+            default:
+                $tag = 'LOCAL-' . $patrimonio;
+                break;
+        }
+
+
+        // --------------------------------------------------------------------
+        // Localiza a maquina no OCS pelo hostname
+        // --------------------------------------------------------------------
+
         $stmtBuscaOCS->execute([
-            ':host1'     => $hostnameOrig,
-            ':novo_nome' => $novoNome,
-            ':host2'     => $hostnameOrig,
-            ':host3'     => $hostnameOrig
+            ':hostname' => $hostnameOrig
         ]);
 
         $ocsMachine = $stmtBuscaOCS->fetch();
 
+
+        // --------------------------------------------------------------------
+        // Maquina ainda nao encontrada
+        // --------------------------------------------------------------------
+
         if (!$ocsMachine) {
-            // Maquina ainda nao enviou inventario para o OCS Server
-            logMessage("[PENDENTE] Hostname '$hostnameOrig' (Patrimonio: $patrimonio) ainda nao enviou inventario para o OCS. Sera processado no proximo ciclo.", $logFile);
+
+            logMessage(
+                "[PENDENTE] Hostname '$hostnameOrig' (TAG calculada: '$tag') ainda nao foi localizado no OCS.",
+                $logFile
+            );
+
             $contNaoLocalizados++;
+
             continue;
         }
 
-        $ocsId       = $ocsMachine['ID'];
+
+        // --------------------------------------------------------------------
+        // HARDWARE_ID encontrado
+        // --------------------------------------------------------------------
+
+        $ocsId = $ocsMachine['ID'];
+
         $ocsNomeAtual = $ocsMachine['NAME'];
 
-        // Verifica se ja esta com o nome correto
-        if (strcasecmp($ocsNomeAtual, $novoNome) === 0) {
-            if ($isVerbose) {
-                logMessage("[JA SINCRONIZADO] OCS ID #$ocsId ja esta identificado como '$ocsNomeAtual'.", $logFile);
-            }
-            if (!$isDryRun) {
-                $stmtUpdateCadastro->execute([':id' => $idCadastro]);
-            }
-            $contJaAtualizados++;
+
+        if ($isVerbose) {
+
+            logMessage(
+                "[LOCALIZADO] Hostname '$hostnameOrig' -> OCS HARDWARE_ID #$ocsId.",
+                $logFile
+            );
+
+            logMessage(
+                "[TAG] Prefixo '$prefixo' -> TAG calculada '$tag'.",
+                $logFile
+            );
+        }
+
+
+        // --------------------------------------------------------------------
+        // Verifica se existe accountinfo para este HARDWARE_ID
+        // --------------------------------------------------------------------
+
+        $stmtBuscaAccountInfo->execute([
+            ':hardware_id' => $ocsId
+        ]);
+
+        $accountInfo = $stmtBuscaAccountInfo->fetch();
+
+
+        if (!$accountInfo) {
+
+            logMessage(
+                "[ERRO] OCS HARDWARE_ID #$ocsId ('$ocsNomeAtual') nao possui registro em accountinfo. TAG '$tag' nao sera atualizado.",
+                $logFile
+            );
+
+            $contSemAccountInfo++;
+
             continue;
         }
 
-        // Realiza atualizacao do nome no OCS Server
-        logMessage("[ATUALIZANDO] OCS ID #$ocsId: '$ocsNomeAtual' -> '$novoNome' (Patrimonio: $patrimonio)", $logFile);
 
-        if (!$isDryRun) {
-            $params = [
-                ':novo_nome' => $novoNome,
-                ':id'        => $ocsId
-            ];
-            if ($config['update_userid']) {
-                $params[':usuario'] = $usuario;
+        // --------------------------------------------------------------------
+        // TAG atual
+        // --------------------------------------------------------------------
+
+        $tagAtual = trim(
+            (string)($accountInfo['TAG'] ?? '')
+        );
+
+
+        // --------------------------------------------------------------------
+        // Verifica se o TAG ja esta correto
+        // --------------------------------------------------------------------
+
+        if ($tagAtual === $tag) {
+
+            if ($isVerbose) {
+
+                logMessage(
+                    "[JA SINCRONIZADO] OCS ID #$ocsId / Hostname '$ocsNomeAtual' ja possui TAG '$tag'.",
+                    $logFile
+                );
             }
 
-            $stmtUpdateHardware->execute($params);
-            $stmtUpdateCadastro->execute([':id' => $idCadastro]);
+            if (!$isDryRun) {
+
+                $stmtUpdateCadastro->execute([
+                    ':id' => $idCadastro
+                ]);
+            }
+
+            $contJaAtualizados++;
+
+            continue;
         }
+
+
+        // --------------------------------------------------------------------
+        // Atualizacao do accountinfo.TAG
+        // --------------------------------------------------------------------
+
+        logMessage(
+            "[ATUALIZANDO] OCS ID #$ocsId / Hostname '$ocsNomeAtual': accountinfo.TAG '$tagAtual' -> '$tag'.",
+            $logFile
+        );
+
+
+        if (!$isDryRun) {
+
+            $stmtUpdateAccountInfo->execute([
+                ':tag'         => $tag,
+                ':hardware_id' => $ocsId
+            ]);
+
+            $stmtUpdateCadastro->execute([
+                ':id' => $idCadastro
+            ]);
+        }
+
 
         $contAtualizados++;
     }
 
-    logMessage("------------------------------------------------------------------", $logFile);
-    logMessage("RESUMO DA SINCRONIZACAO:", $logFile);
-    logMessage(" - Registros atualizados no OCS: $contAtualizados", $logFile);
-    logMessage(" - Registros ja conformes:       $contJaAtualizados", $logFile);
-    logMessage(" - Aguardando envio do OCS Agent:$contNaoLocalizados", $logFile);
-    logMessage("Sincronizacao concluida com sucesso.", $logFile);
-    logMessage("==================================================================", $logFile);
+
+// ============================================================================
+// [15] RESUMO
+// ============================================================================
+
+    logMessage(
+        "------------------------------------------------------------------",
+        $logFile
+    );
+
+    logMessage(
+        "RESUMO DA SINCRONIZACAO:",
+        $logFile
+    );
+
+    logMessage(
+        " - TAGs atualizados em accountinfo: $contAtualizados",
+        $logFile
+    );
+
+    logMessage(
+        " - TAGs ja conformes:               $contJaAtualizados",
+        $logFile
+    );
+
+    logMessage(
+        " - Maquinas nao localizadas:        $contNaoLocalizados",
+        $logFile
+    );
+
+    logMessage(
+        " - Sem registro accountinfo:        $contSemAccountInfo",
+        $logFile
+    );
+
+    logMessage(
+        " - Erros de validacao:              $contErros",
+        $logFile
+    );
+
+    logMessage(
+        "Nenhuma alteracao foi realizada em hardware.NAME, hardware.USERID ou hardware.TAG.",
+        $logFile
+    );
+
+    logMessage(
+        "Sincronizacao concluida.",
+        $logFile
+    );
+
+    logMessage(
+        "==================================================================",
+        $logFile
+    );
+
+
+// ============================================================================
+// [16] TRATAMENTO DE ERROS
+// ============================================================================
 
 } catch (Exception $e) {
-    logMessage("[ERRO CRITICO] Falha na execucao da sincronizacao: " . $e->getMessage(), $logFile);
+
+    logMessage(
+        "[ERRO CRITICO] Falha na execucao da sincronizacao: " .
+        $e->getMessage(),
+        $logFile
+    );
+
     exit(1);
 }
+
+?>

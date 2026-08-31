@@ -10,7 +10,7 @@ namespace OCSCadastroApp
         /// <summary>
         /// URL do endpoint da API de cadastro no servidor OCS.
         /// </summary>
-        public static string ApiEndpointUrl = "http://192.168.15.20/cadastro_api/cadastrar.php";
+        public static string ApiEndpointUrl = "http://192.168.2.48/cadastro_api/cadastrar.php";
 
         /// <summary>
         /// Token de seguranca obrigatorio (SEC-02) correspondente ao api/config.php.
