@@ -11,7 +11,7 @@ setlocal enabledelayedexpansion
 rem ============================================================================
 rem [1] CONFIGURACOES DO AMBIENTE
 rem ============================================================================
-set "OCS_SERVER_URL=http://192.168.15.20/ocsinventory"
+set "OCS_SERVER_URL=http://192.168.2.48/ocsinventory"
 set "OCS_SSL=0"
 set "INSTALLER_32=OCS-Agent-2.11-x86.exe"
 set "INSTALLER_64=OCS-Agent-2.11-x64.exe"
