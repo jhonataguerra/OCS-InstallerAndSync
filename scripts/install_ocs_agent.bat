@@ -2,7 +2,7 @@
 rem ============================================================================
 rem PROJETO: Inventario e Identificacao de Maquinas OCS
 rem ETAPA 1: Script de Instalacao Silenciosa do OCS Inventory Agent 2.11
-rem ARQUITETURA: Dual — Deteccao automatica de 32 bits (x86) e 64 bits (x64)
+rem ARQUITETURA: Dual - Deteccao automatica de 32 bits (x86) e 64 bits (x64)
 rem RESTRICAO: 100% Batch / CMD (Zero dependencia de PowerShell)
 rem ============================================================================
 
@@ -30,73 +30,83 @@ echo [%DATE% %TIME%] INICIANDO VERIFICACAO DO OCS AGENT >> "%LOG_FILE%"
 echo [%DATE% %TIME%] Hostname: %COMPUTERNAME% >> "%LOG_FILE%"
 
 rem ============================================================================
-rem [3] VERIFICACAO DE INSTALACAO EXISTENTE (IDEMPOTENCIA)
+rem [3] DETECCAO DE ARQUITETURA DO SISTEMA OPERACIONAL
 rem ============================================================================
-if "%FORCE_REINSTALL%"=="0" (
-    rem Verifica se o servico OCS Inventory ja existe
-    sc query "OCS Inventory Service" >nul 2>&1
-    if !ERRORLEVEL! equ 0 (
-        echo [%DATE% %TIME%] OCS Inventory Service ja esta instalado no sistema. >> "%LOG_FILE%"
-        goto END_SUCCESS_ALREADY_INSTALLED
-    )
-
-    rem Verifica se o executavel padrao ja existe em Program Files (32 ou 64 bits)
-    if exist "%ProgramFiles%\OCS Inventory Agent\OCSInventory.exe" (
-        echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles. >> "%LOG_FILE%"
-        goto END_SUCCESS_ALREADY_INSTALLED
-    )
-    if exist "%ProgramFiles(x86)%\OCS Inventory Agent\OCSInventory.exe" (
-        echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles(x86). >> "%LOG_FILE%"
-        goto END_SUCCESS_ALREADY_INSTALLED
-    )
-)
-
-rem ============================================================================
-rem [4] DETECCAO DE ARQUITETURA DO SISTEMA OPERACIONAL
-rem ============================================================================
-rem METODO 1: A variavel PROCESSOR_ARCHITEW6432 so existe quando um processo
-rem           de 32 bits esta rodando via WOW64 em um SO de 64 bits.
-rem           Nesse caso, ela contem "AMD64" indicando o SO real.
-rem
-rem METODO 2: Em um processo nativo de 64 bits, PROCESSOR_ARCHITECTURE
-rem           contem "AMD64". Em um processo nativo de 32 bits em SO 32 bits,
-rem           ela contem "x86" e PROCESSOR_ARCHITEW6432 nao existe.
-rem
-rem RESULTADO: OS_ARCH sera definido como "x64" ou "x86".
-
 set "OS_ARCH=x86"
 
 if defined PROCESSOR_ARCHITEW6432 (
     set "OS_ARCH=x64"
-    echo [%DATE% %TIME%] Arquitetura detectada: x64 ^(WOW64 — ARCHITEW6432=%PROCESSOR_ARCHITEW6432%^) >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Arquitetura detectada: x64 [WOW64 - ARCHITEW6432=!PROCESSOR_ARCHITEW6432!] >> "%LOG_FILE%"
     goto ARCH_DETECTADA
 )
 
 if /i "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
     set "OS_ARCH=x64"
-    echo [%DATE% %TIME%] Arquitetura detectada: x64 ^(nativo — ARCHITECTURE=AMD64^) >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Arquitetura detectada: x64 [nativo - ARCHITECTURE=!PROCESSOR_ARCHITECTURE!] >> "%LOG_FILE%"
     goto ARCH_DETECTADA
 )
 
 if /i "%PROCESSOR_ARCHITECTURE%"=="IA64" (
     set "OS_ARCH=x64"
-    echo [%DATE% %TIME%] Arquitetura detectada: x64 ^(Itanium — ARCHITECTURE=IA64^) >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Arquitetura detectada: x64 [Itanium - ARCHITECTURE=!PROCESSOR_ARCHITECTURE!] >> "%LOG_FILE%"
     goto ARCH_DETECTADA
 )
 
-echo [%DATE% %TIME%] Arquitetura detectada: x86 ^(32-bit nativo — ARCHITECTURE=%PROCESSOR_ARCHITECTURE%^) >> "%LOG_FILE%"
+echo [%DATE% %TIME%] Arquitetura detectada: x86 [32-bit nativo - ARCHITECTURE=!PROCESSOR_ARCHITECTURE!] >> "%LOG_FILE%"
 
 :ARCH_DETECTADA
+
+rem ============================================================================
+rem [4] VERIFICACAO DE INSTALACAO EXISTENTE (IDEMPOTENCIA)
+rem ============================================================================
+if "%FORCE_REINSTALL%"=="0" (
+    if defined TEST_OVERRIDE_SERVICE (
+        if "%TEST_OVERRIDE_SERVICE%"=="1" (
+            echo [%DATE% %TIME%] OCS Inventory Service ja esta instalado no sistema. >> "%LOG_FILE%"
+            goto END_SUCCESS_ALREADY_INSTALLED
+        )
+    ) else (
+        sc query "OCS Inventory Service" >nul 2>&1
+        if !ERRORLEVEL! equ 0 (
+            echo [%DATE% %TIME%] OCS Inventory Service ja esta instalado no sistema. >> "%LOG_FILE%"
+            goto END_SUCCESS_ALREADY_INSTALLED
+        )
+    )
+
+    if defined TEST_OVERRIDE_PF (
+        if exist "%TEST_OVERRIDE_PF%\OCS Inventory Agent\OCSInventory.exe" (
+            echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles. >> "%LOG_FILE%"
+            goto END_SUCCESS_ALREADY_INSTALLED
+        )
+    ) else (
+        if exist "%ProgramFiles%\OCS Inventory Agent\OCSInventory.exe" (
+            echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles. >> "%LOG_FILE%"
+            goto END_SUCCESS_ALREADY_INSTALLED
+        )
+    )
+
+    if defined TEST_OVERRIDE_PFX86 (
+        if exist "%TEST_OVERRIDE_PFX86%\OCS Inventory Agent\OCSInventory.exe" (
+            echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles x86. >> "%LOG_FILE%"
+            goto END_SUCCESS_ALREADY_INSTALLED
+        )
+    ) else (
+        if exist "%ProgramFiles(x86)%\OCS Inventory Agent\OCSInventory.exe" (
+            echo [%DATE% %TIME%] Executavel OCSInventory.exe encontrado em ProgramFiles x86. >> "%LOG_FILE%"
+            goto END_SUCCESS_ALREADY_INSTALLED
+        )
+    )
+)
 
 rem ============================================================================
 rem [5] SELECAO DINAMICA DO INSTALADOR CONFORME ARQUITETURA DETECTADA
 rem ============================================================================
 if "%OS_ARCH%"=="x64" (
     set "INSTALLER_NAME=!INSTALLER_64!"
-    echo [%DATE% %TIME%] Selecao: Instalador 64-bit selecionado ^(!INSTALLER_64!^) >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Selecao: Instalador 64-bit selecionado [!INSTALLER_64!] >> "%LOG_FILE%"
 ) else (
     set "INSTALLER_NAME=!INSTALLER_32!"
-    echo [%DATE% %TIME%] Selecao: Instalador 32-bit selecionado ^(!INSTALLER_32!^) >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Selecao: Instalador 32-bit selecionado [!INSTALLER_32!] >> "%LOG_FILE%"
 )
 
 set "INSTALLER_PATH=%SCRIPT_DIR%%INSTALLER_NAME%"
@@ -111,16 +121,6 @@ echo [%DATE% %TIME%] Utilizando instalador: "%INSTALLER_PATH%" >> "%LOG_FILE%"
 rem ============================================================================
 rem [6] EXECUCAO SILENCIOSA DO INSTALADOR COM PARAMETRO /TAG
 rem ============================================================================
-rem Parametros OCS Agent (gerados pelo OcsPackager):
-rem /S           -> Modo silencioso (NSIS Silent Install)
-rem /SERVER=...  -> URL do servidor OCS Inventory
-rem /TAG=...     -> Tag dinamica com o Hostname da maquina
-rem /NOSPLASH    -> Suprime a tela inicial do instalador
-rem /NOW         -> Dispara o primeiro inventario imediatamente apos instalacao
-rem /NO_SYSTRAY  -> Oculta o icone na area de notificacao do Windows
-rem /DEBUG=2     -> Habilita log detalhado do agente no cliente
-rem /SSL=0       -> Conexao HTTP sem SSL (ajuste para 1 se usar HTTPS)
-
 echo [%DATE% %TIME%] Executando instalador [Arch: %OS_ARCH%] com /TAG=%COMPUTERNAME%... >> "%LOG_FILE%"
 
 start /wait "" "%INSTALLER_PATH%" /S /NOSPLASH /NO_SYSTRAY /SERVER=%OCS_SERVER_URL% /SSL=%OCS_SSL% /DEBUG=2 /TAG=%COMPUTERNAME% /NOW
@@ -129,7 +129,7 @@ set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
 echo [%DATE% %TIME%] Codigo de saida do instalador: %INSTALL_EXIT_CODE% >> "%LOG_FILE%"
 
 if %INSTALL_EXIT_CODE% neq 0 (
-    echo [%DATE% %TIME%] AVISO: Instalador finalizou com codigo diferente de zero ^(%INSTALL_EXIT_CODE%^). Verifique o log do agente. >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] AVISO: Instalador finalizou com codigo diferente de zero [%INSTALL_EXIT_CODE%]. Verifique o log do agente. >> "%LOG_FILE%"
 )
 
 rem ============================================================================

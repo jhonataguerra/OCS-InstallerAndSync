@@ -12,7 +12,7 @@ set "TEST_SCRIPT=%SCRIPT_DIR%test_install_agent.ps1"
 
 echo.
 echo ================================================================
-echo  OCS InstallerAndSync — Suite de Testes Automatizados
+echo  OCS InstallerAndSync - Suite de Testes Automatizados
 echo ================================================================
 echo.
 
@@ -54,12 +54,14 @@ set "TEST_EXIT=%ERRORLEVEL%"
 echo.
 echo ================================================================
 if %TEST_EXIT% equ 0 (
-    echo  RESULTADO: APROVADO — Todos os testes passaram.
-) else if %TEST_EXIT% equ 99 (
-    echo  RESULTADO: ERRO FATAL — Suite nao pode ser executada.
+    echo  RESULTADO: APROVADO - Todos os testes passaram.
 ) else (
-    echo  RESULTADO: REPROVADO — %TEST_EXIT% teste(s) falharam.
-    echo  Corrija as falhas antes de gerar o relatorio de seguranca.
+    if %TEST_EXIT% equ 99 (
+        echo  RESULTADO: ERRO FATAL - Suite nao pode ser executada.
+    ) else (
+        echo  RESULTADO: REPROVADO - %TEST_EXIT% falha detectada.
+        echo  Corrija as falhas antes de gerar o relatorio de seguranca.
+    )
 )
 echo ================================================================
 echo.

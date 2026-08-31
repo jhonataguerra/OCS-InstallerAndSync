@@ -9,8 +9,8 @@ SCRIPT  : Orquestrador de Testes + Gate de Validacao de Seguranca
 Fluxo de execucao:
   1. Executa a suite de testes automatizados (tests/run_tests.bat)
   2. Avalia o resultado:
-     - TODOS os testes passam → gera o Relatorio de Seguranca em PDF
-     - QUALQUER falha        → exibe sumario de falhas e DIFERE a seguranca
+     - TODOS os testes passam -> gera o Relatorio de Seguranca em PDF
+     - QUALQUER falha        -> exibe sumario de falhas e DIFERE a seguranca
 
 Uso:
   python scripts/run_tests_and_security.py
@@ -24,7 +24,7 @@ import argparse
 from datetime import datetime
 
 # ============================================================================
-# CONFIGURAÇÕES
+# CONFIGURACOES
 # ============================================================================
 REPO_ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_RUNNER      = os.path.join(REPO_ROOT, 'tests', 'run_tests.bat')
@@ -43,13 +43,13 @@ def timestamp() -> str:
 
 
 # ============================================================================
-# ETAPA 1 — EXECUÇÃO DOS TESTES
+# ETAPA 1 - EXECUCAO DOS TESTES
 # ============================================================================
-def run_test_suite() -> tuple[int, str, str]:
+def run_test_suite() -> int:
     """
-    Executa run_tests.bat e retorna (exit_code, stdout, stderr).
+    Executa run_tests.bat e retorna o exit code.
     """
-    banner('ETAPA 1 / 2 — Suite de Testes Automatizados')
+    banner('ETAPA 1 / 2 - Suite de Testes Automatizados')
     print(f'  Iniciado em  : {timestamp()}')
     print(f'  Runner       : {TEST_RUNNER}')
     print()
@@ -61,7 +61,7 @@ def run_test_suite() -> tuple[int, str, str]:
     result = subprocess.run(
         ['cmd.exe', '/c', TEST_RUNNER],
         cwd=REPO_ROOT,
-        capture_output=False,   # Exibe output em tempo real
+        capture_output=False,
         text=True,
         encoding='utf-8',
         errors='replace'
@@ -71,14 +71,14 @@ def run_test_suite() -> tuple[int, str, str]:
 
 
 # ============================================================================
-# ETAPA 2 — GATE DE SEGURANÇA
+# ETAPA 2 - GATE DE SEGURANCA
 # ============================================================================
 def run_security_gate(tests_exit_code: int, force: bool) -> None:
     """
     Se todos os testes passam (exit_code == 0), gera o relatorio de seguranca.
     Caso contrario, difere a validacao com mensagem clara.
     """
-    banner('ETAPA 2 / 2 — Gate de Validacao de Seguranca')
+    banner('ETAPA 2 / 2 - Gate de Validacao de Seguranca')
 
     if tests_exit_code == 0 or force:
         if force and tests_exit_code != 0:
@@ -102,14 +102,14 @@ def run_security_gate(tests_exit_code: int, force: bool) -> None:
 
         print()
         if sec_result.returncode == 0:
-            banner('RESULTADO FINAL — SUCESSO COMPLETO', char='-')
+            banner('RESULTADO FINAL - SUCESSO COMPLETO', char='-')
             print('  [OK] Suite de testes  : APROVADA')
             print('  [OK] Relatorio PDF    : GERADO')
             print(f'  Concluido em          : {timestamp()}')
             print()
             sys.exit(0)
         else:
-            banner('RESULTADO FINAL — FALHA NA GERACAO DO PDF', char='-')
+            banner('RESULTADO FINAL - FALHA NA GERACAO DO PDF', char='-')
             print('  [OK]    Suite de testes  : APROVADA')
             print('  [FALHA] Relatorio PDF    : ERRO NA GERACAO')
             print('          Verifique se a dependencia "reportlab" esta instalada:')
@@ -119,9 +119,9 @@ def run_security_gate(tests_exit_code: int, force: bool) -> None:
 
     else:
         # ----------------------------------------------------------------
-        # Testes falharam — DIFERE a validacao de seguranca
+        # Testes falharam - DIFERE a validacao de seguranca
         # ----------------------------------------------------------------
-        banner('RESULTADO FINAL — VALIDACAO DE SEGURANCA DIFERIDA', char='!')
+        banner('RESULTADO FINAL - VALIDACAO DE SEGURANCA DIFERIDA', char='!')
         print()
         print('  [!] GATE DE SEGURANCA NAO EXECUTADO')
         print()
@@ -149,7 +149,7 @@ def run_security_gate(tests_exit_code: int, force: bool) -> None:
 # ============================================================================
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='Orquestrador de Testes + Gate de Seguranca — OCS InstallerAndSync'
+        description='Orquestrador de Testes + Gate de Seguranca - OCS InstallerAndSync'
     )
     parser.add_argument(
         '--force-security',
@@ -158,14 +158,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    banner('OCS InstallerAndSync — Orquestrador de Qualidade e Seguranca')
+    banner('OCS InstallerAndSync - Orquestrador de Qualidade e Seguranca')
     print(f'  Repositorio : {REPO_ROOT}')
     print(f'  Iniciado em : {timestamp()}')
 
     # Etapa 1: Testes
     exit_code = run_test_suite()
 
-    # Etapa 2: Gate de Segurança
+    # Etapa 2: Gate de Seguranca
     run_security_gate(exit_code, force=args.force_security)
 
 
