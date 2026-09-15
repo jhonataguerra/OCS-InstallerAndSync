@@ -56,7 +56,9 @@ mais exibida."                           │
 ## 3. Segurança e Distribuição Corporativa
 
 * **Token de Segurança Integrado:** A aplicação envia no cabeçalho HTTP o token criptográfico `X-API-TOKEN`, impedindo injeção de dados falsos por terceiros na rede.
-* **Distribuição via GPO:** Publique apenas o arquivo [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/CadastroPatrimonio.exe) no compartilhamento de logon (`\\SEU_DOMINIO\SYSVOL\...`).
+* **Configuração Dinâmica do Endpoint:** O aplicativo lê com prioridade o endpoint da API na chave de Registro `HKLM\Software\OCS_Inventario\ApiEndpointUrl`, permitindo apontar para IPs externos sem necessidade de recompilação.
+* **Distribuição via GPO (Domínio):** Publique apenas o arquivo [CadastroPatrimonio.exe](../client_app/CadastroPatrimonio.exe) no compartilhamento de logon (`\\SEU_DOMINIO\SYSVOL\...`).
+* **Distribuição Fora do Domínio (Workgroup):** Utilize o script [`instalar_workgroup.bat`](../scripts/instalar_workgroup.bat), que copia o binário para `Program Files`, registra na chave `Run` do Windows e grava o endpoint correto no Registro. Consulte [instalacao_workgroup_instrucoes.md](instalacao_workgroup_instrucoes.md).
 
 ---
 

@@ -9,8 +9,9 @@ Solução completa, leve, segura e compatível com **Windows 7 (32/64 bits), Win
 1. [Visão Geral e Arquitetura](#-visão-geral-e-arquitetura)
 2. [Estrutura do Repositório](#-estrutura-do-repositório)
 3. [Guia de Implantação Passo a Passo](#-guia-de-implantação-passo-a-passo)
-   * [Passo 1: Gerar o Pacote OCS no OcsPackager](#passo-1-gerar-o-pacote-ocs-no-ocspackager)
-   * [Passo 2: Distribuir o OCS Agent via GPO (Startup)](#passo-2-distribuir-o-ocs-agent-via-gpo-startup)
+   * [Passo 1: Gerar os Pacotes OCS no OcsPackager](#passo-1-gerar-os-pacotes-ocs-no-ocspackager-dual-x86x64)
+   * [Passo 2A: Distribuir o OCS Agent via GPO (Active Directory)](#passo-2a-distribuir-o-ocs-agent-via-gpo-startup)
+   * [Passo 2B: Instalação Fora do Active Directory (Workgroup)](#passo-2b-instalação-fora-do-active-directory-workgroup)
    * [Passo 3: Configurar o Banco de Dados e a API de Ingestão](#passo-3-configurar-o-banco-de-dados-e-a-api-de-ingestão)
    * [Passo 4: Distribuir a Aplicação de Cadastro (Logon)](#passo-4-distribuir-a-aplicação-de-cadastro-logon)
    * [Passo 5: Configurar a Sincronização Automática no OCS Server](#passo-5-configurar-a-sincronização-automática-no-ocs-server)
@@ -65,6 +66,8 @@ orchestration_ocs_inventory_system/
 │
 ├── scripts/                                # Scripts de instalação e automação
 │   ├── install_ocs_agent.bat               # Instalação silenciosa do OCS Agent (Batch Puro)
+│   ├── instalar_workgroup.bat              # Instalador mestre para computadores fora do domínio (Workgroup)
+│   ├── instalar_workgroup_tag_manual.bat   # Instalador para Workgroup com input manual de TAG no prompt
 │   └── generate_security_report_pdf.py    # Gerador do relatório de segurança em PDF
 │
 ├── database/                               # Banco de Dados
@@ -81,7 +84,7 @@ orchestration_ocs_inventory_system/
 │   ├── MainForm.Designer.cs                # Layout moderno da janela
 │   ├── SystemInfoCollector.cs              # Coleta WMI com filtro de BIOS genérica
 │   ├── RegistryHelper.cs                   # Controle de prazos e execução única
-│   ├── AppConfig.cs                        # Configurações de API e Token
+│   ├── AppConfig.cs                        # Configurações dinâmicas (Registro/Fallback)
 │   ├── app.manifest                        # Manifest de compatibilidade (Win7 a Win11)
 │   └── build.bat                           # Compilador nativo via csc.exe
 │
@@ -92,7 +95,8 @@ orchestration_ocs_inventory_system/
 │
 └── docs/                                   # Manuais e Relatórios
     ├── relatorio_seguranca_matriz_criticidade.pdf # Relatório ilustrado de auditoria
-    ├── etapa1_gpo_instrucoes.md            # Manual do OCS Agent via GPO
+    ├── instalacao_workgroup_instrucoes.md  # Manual completo de instalação Fora do Domínio
+    ├── etapa1_gpo_instrucoes.md            # Manual do OCS Agent via GPO (Active Directory)
     ├── etapa2_backend_instrucoes.md        # Manual do Banco MySQL e API
     ├── etapa2_aplicacao_instrucoes.md      # Manual do Executável de Cadastro
     └── etapa3_sincronizacao_instrucoes.md  # Manual do Crontab de Sincronização
@@ -126,13 +130,28 @@ orchestration_ocs_inventory_system/
 
 ---
 
-### Passo 2: Distribuir o OCS Agent via GPO (Startup)
-1. Coloque o [install_ocs_agent.bat](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/scripts/install_ocs_agent.bat), o `OCS-Agent-2.11-x86.exe` e o `OCS-Agent-2.11-x64.exe` na mesma pasta de rede compartilhada (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs`).
+### Passo 2A: Distribuir o OCS Agent via GPO (Startup)
+1. Coloque o [install_ocs_agent.bat](scripts/install_ocs_agent.bat), o `OCS-Agent-2.11-x86.exe` e o `OCS-Agent-2.11-x64.exe` na mesma pasta de rede compartilhada (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs`).
 2. No **GPMC (Group Policy Management Console)**:
    * Edite a GPO de computadores.
    * Vá em: `Configurações do Computador` -> `Políticas` -> `Configurações do Windows` -> `Scripts (Inicialização/Encerramento)` -> **Inicialização (Startup)**.
    * Aponte para: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs\install_ocs_agent.bat`.
 3. O script roda nativamente como `SYSTEM` antes do logon, não utiliza PowerShell e verifica se o serviço já existe para não reinstalar a cada boot.
+
+---
+
+### Passo 2B: Instalação Fora do Active Directory (Workgroup)
+Para computadores que **não estão no domínio** (filiais, redes externas, home office ou redes segmentadas), utilize os scripts dedicados na pasta `scripts/`:
+
+1. **Definir o IP / Host do Servidor:**
+   Abra o script desejado (`instalar_workgroup.bat` ou `instalar_workgroup_tag_manual.bat`) e altere a variável `SERVER_HOST`:
+   ```bat
+   set "SERVER_HOST=200.x.x.x"
+   ```
+2. **Escolher a forma de instalação:**
+   * **Instalação Padrão (Sem perguntas):** Execute com botão direito em `scripts/instalar_workgroup.bat` -> **"Executar como Administrador"**. O script instala o agente, assume a TAG como `%COMPUTERNAME%`, copia o `CadastroPatrimonio.exe` para `Program Files`, configura a chave `Run` no Registro e inicia o formulário.
+   * **Instalação com TAG Manual:** Execute com botão direito em `scripts/instalar_workgroup_tag_manual.bat` -> **"Executar como Administrador"**. O prompt solicitará a digitação da TAG personalizada (ex: `VIC-123456`) e configurará o agente imediatamente com essa identificação.
+3. Para mais detalhes, consulte o manual dedicado: [docs/instalacao_workgroup_instrucoes.md](docs/instalacao_workgroup_instrucoes.md).
 
 ---
 
@@ -215,13 +234,15 @@ del /f /q "%LocalAppData%\OCS_Inventario\*.*" 2>nul
 * **Log de erros da API de Ingestão:** `/var/log/ocs_cadastro_api_error.log` (no servidor Linux)
 * **Log da Sincronização de Nomes:** `/var/log/ocs_sync_patrimonio.log` (no servidor Linux)
 
-### 3. Como recompilar o executável caso eu altere o IP do servidor?
-Edite o arquivo [AppConfig.cs](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/AppConfig.cs) e execute no Prompt de Comando:
-```cmd
-cd client_app
-build.bat
-```
-O script utiliza o compilador C# nativo (`csc.exe`) do Windows e gera o binário otimizado.
+### 3. Como alterar o IP/URL do servidor para o executável de cadastro?
+* **Forma recomendada (Sem recompilar):** O executável `CadastroPatrimonio.exe` lê prioritariamente o valor `ApiEndpointUrl` gravado no Registro do Windows em `HKLM\Software\OCS_Inventario`. Os scripts `instalar_workgroup.bat` já realizam essa gravação automaticamente conforme a variável `SERVER_HOST`.
+* **Recompilação nativa (Se desejar alterar o valor padrão embutido):**
+  Edite o arquivo [AppConfig.cs](client_app/AppConfig.cs) e execute no Prompt de Comando:
+  ```cmd
+  cd client_app
+  build.bat
+  ```
+  O script utiliza o compilador C# nativo (`csc.exe`) do Windows e gera o binário otimizado.
 
 ---
 

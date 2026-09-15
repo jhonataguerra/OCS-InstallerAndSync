@@ -161,3 +161,9 @@ reg delete "HKLM\Software\OCS_Inventario" /f
 del /f /q "%ProgramData%\OCS_Inventario\*.*" 2>nul
 del /f /q "%LocalAppData%\OCS_Inventario\*.*" 2>nul
 ```
+
+---
+
+## 8. Máquinas Fora do Domínio (Workgroup)
+
+Para computadores que não participam do Active Directory, não utilize a GPO. Em vez disso, utilize os scripts automatizados `instalar_workgroup.bat` ou `instalar_workgroup_tag_manual.bat`. Consulte o documento completo em [instalacao_workgroup_instrucoes.md](instalacao_workgroup_instrucoes.md).
