@@ -11,8 +11,19 @@ setlocal enabledelayedexpansion
 rem ============================================================================
 rem [1] CONFIGURACOES DO AMBIENTE
 rem ============================================================================
-set "OCS_SERVER_URL=http://192.168.2.48/ocsinventory"
-set "OCS_SSL=0"
+if "%~1" neq "" (
+    set "OCS_SERVER_URL=%~1"
+) else if not defined OCS_SERVER_URL (
+    set "OCS_SERVER_URL=http://192.168.2.48/ocsinventory"
+)
+
+if "%~2" neq "" (
+    set "OCS_TAG=%~2"
+) else if not defined OCS_TAG (
+    set "OCS_TAG=%COMPUTERNAME%"
+)
+
+if not defined OCS_SSL set "OCS_SSL=0"
 set "INSTALLER_32=OCS-Agent-2.11-x86.exe"
 set "INSTALLER_64=OCS-Agent-2.11-x64.exe"
 set "FORCE_REINSTALL=0"
@@ -121,9 +132,9 @@ echo [%DATE% %TIME%] Utilizando instalador: "%INSTALLER_PATH%" >> "%LOG_FILE%"
 rem ============================================================================
 rem [6] EXECUCAO SILENCIOSA DO INSTALADOR COM PARAMETRO /TAG
 rem ============================================================================
-echo [%DATE% %TIME%] Executando instalador [Arch: %OS_ARCH%] com /TAG=%COMPUTERNAME%... >> "%LOG_FILE%"
+echo [%DATE% %TIME%] Executando instalador [Arch: %OS_ARCH%] com /TAG=%OCS_TAG%... >> "%LOG_FILE%"
 
-start /wait "" "%INSTALLER_PATH%" /S /NOSPLASH /NO_SYSTRAY /SERVER=%OCS_SERVER_URL% /SSL=%OCS_SSL% /DEBUG=2 /TAG=%COMPUTERNAME% /NOW
+start /wait "" "%INSTALLER_PATH%" /S /NOSPLASH /NO_SYSTRAY /SERVER=%OCS_SERVER_URL% /SSL=%OCS_SSL% /DEBUG=2 /TAG=%OCS_TAG% /NOW
 set "INSTALL_EXIT_CODE=%ERRORLEVEL%"
 
 echo [%DATE% %TIME%] Codigo de saida do instalador: %INSTALL_EXIT_CODE% >> "%LOG_FILE%"
