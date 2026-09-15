@@ -39,6 +39,8 @@ if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 echo ================================================================ >> "%LOG_FILE%"
 echo [%DATE% %TIME%] INICIANDO VERIFICACAO DO OCS AGENT >> "%LOG_FILE%"
 echo [%DATE% %TIME%] Hostname: %COMPUTERNAME% >> "%LOG_FILE%"
+echo [%DATE% %TIME%] Servidor OCS: %OCS_SERVER_URL% >> "%LOG_FILE%"
+echo [%DATE% %TIME%] TAG OCS: %OCS_TAG% >> "%LOG_FILE%"
 
 rem ============================================================================
 rem [3] DETECCAO DE ARQUITETURA DO SISTEMA OPERACIONAL

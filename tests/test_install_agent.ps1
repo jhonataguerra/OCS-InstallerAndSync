@@ -121,7 +121,8 @@ function New-TestEnvironment {
 function Invoke-InstallBatch {
     param(
         [string]$TestDir,
-        [hashtable]$EnvOverrides = @{}
+        [hashtable]$EnvOverrides = @{},
+        [string]$Arguments = ''
     )
 
     $logSizeBefore = 0
@@ -141,10 +142,11 @@ function Invoke-InstallBatch {
 
     $batchPath = Join-Path $TestDir 'install_ocs_agent.bat'
     $cmdLine = ""
+    $callCmd = if ($Arguments) { "call `"$batchPath`" $Arguments" } else { "call `"$batchPath`"" }
     if ($setCommands.Count -gt 0) {
-        $cmdLine = ($setCommands -join " & ") + " & call `"$batchPath`""
+        $cmdLine = ($setCommands -join " & ") + " & $callCmd"
     } else {
-        $cmdLine = "call `"$batchPath`""
+        $cmdLine = $callCmd
     }
 
     $proc = Start-Process -FilePath 'cmd.exe' `
@@ -370,6 +372,59 @@ try {
     $passed = ($result.Log -match 'ERRO CRITICO') -and ($result.ExitCode -eq 1)
     $detail = if (-not $passed) { "Prefixo ERRO CRITICO ausente. Log: $($result.Log)" } else { '' }
     Register-TestResult 'T-08' 'Falha critica registrada com prefixo ERRO CRITICO no log' $passed $detail
+}
+finally { Remove-TestEnvironment $testDir }
+
+# ============================================================================
+# T-09: Parametrizacao - URL customizada passada como argumento (Cenario Workgroup/IP Externo)
+# ============================================================================
+Write-Host "-- T-09: Parametrizacao - URL customizada do servidor OCS --" -ForegroundColor DarkCyan
+$testDir = New-TestEnvironment -WithInstaller32 -WithInstaller64
+
+try {
+    $envOvr = @{
+        'PROCESSOR_ARCHITECTURE'  = 'AMD64'
+        'PROCESSOR_ARCHITEW6432'  = ''
+        'TEST_OVERRIDE_SERVICE'   = '0'
+        'TEST_OVERRIDE_PF'        = "$testDir\FakePF_vazio"
+        'TEST_OVERRIDE_PFX86'     = "$testDir\FakePFx86_vazio"
+    }
+    $customUrl = 'http://200.100.50.25:8080/ocsinventory'
+    $result = Invoke-InstallBatch -TestDir $testDir -EnvOverrides $envOvr -Arguments "`"$customUrl`""
+
+    $logContent = if (Test-Path $SYSTEM_LOG) { [System.IO.File]::ReadAllText($SYSTEM_LOG, [System.Text.Encoding]::Default) } else { '' }
+    $hasCustomUrl = $logContent -match [regex]::Escape($customUrl)
+
+    $passed = ($result.ExitCode -eq 0) -and $hasCustomUrl
+    $detail = if (-not $passed) { "ExitCode=$($result.ExitCode), CustomUrlEncontrada=$hasCustomUrl" } else { '' }
+    Register-TestResult 'T-09' 'URL customizada passada como argumento -> aplicada na execucao' $passed $detail
+}
+finally { Remove-TestEnvironment $testDir }
+
+# ============================================================================
+# T-10: Parametrizacao - TAG customizada manual passada como segundo argumento
+# ============================================================================
+Write-Host "-- T-10: Parametrizacao - TAG customizada manual --" -ForegroundColor DarkCyan
+$testDir = New-TestEnvironment -WithInstaller32 -WithInstaller64
+
+try {
+    $envOvr = @{
+        'PROCESSOR_ARCHITECTURE'  = 'AMD64'
+        'PROCESSOR_ARCHITEW6432'  = ''
+        'TEST_OVERRIDE_SERVICE'   = '0'
+        'TEST_OVERRIDE_PF'        = "$testDir\FakePF_vazio"
+        'TEST_OVERRIDE_PFX86'     = "$testDir\FakePFx86_vazio"
+    }
+    $customUrl = 'http://200.100.50.25/ocsinventory'
+    $customTag = 'VIC-TESTE999'
+    $result = Invoke-InstallBatch -TestDir $testDir -EnvOverrides $envOvr -Arguments "`"$customUrl`" `"$customTag`""
+
+    $logContent = if (Test-Path $SYSTEM_LOG) { [System.IO.File]::ReadAllText($SYSTEM_LOG, [System.Text.Encoding]::Default) } else { '' }
+    $hasCustomTag = $logContent -match [regex]::Escape("com /TAG=$customTag")
+
+    $passed = ($result.ExitCode -eq 0) -and $hasCustomTag
+    $detail = if (-not $passed) { "ExitCode=$($result.ExitCode), CustomTagEncontrada=$hasCustomTag" } else { '' }
+    Register-TestResult 'T-10' 'TAG customizada manual passada como argumento -> aplicada na execucao' $passed $detail
 }
 finally { Remove-TestEnvironment $testDir }
 

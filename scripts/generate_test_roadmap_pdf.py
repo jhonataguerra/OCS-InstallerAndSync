@@ -74,13 +74,13 @@ def build_pdf(filename="docs/roteiro_testes_homologacao.pdf"):
 
     # COVER
     story.append(Paragraph("ROTEIRO DE TESTES DE HOMOLOGACAO", sTitle))
-    story.append(Paragraph("Sistema Integrado de Inventario OCS — Etapas 1, 2 e 3<br/>Execucao Normal em Terminal (Sem GPO) — Matriz Win7 32 / Win7 64 / Win10 / Win11", sSub))
+    story.append(Paragraph("Sistema Integrado de Inventario OCS — Etapas 1, 2 e 3<br/>Matriz Win7 32 / Win7 64 / Win10 / Win11 — Ambientes Active Directory e Workgroup", sSub))
     story.append(HRFlowable(width="100%", thickness=1.4, color=C_BLUE, spaceBefore=2, spaceAfter=10))
 
     # Info box
-    info_html = """<b>Servidor de Homologacao:</b> OCS Server ja configurado em <b>http://192.168.2.48/ocsinventory</b> &nbsp;|&nbsp; <b>API:</b> <font face="Courier">http://192.168.2.48/cadastro_api/cadastrar.php</font><br/>
+    info_html = """<b>Servidor de Homologacao:</b> OCS Server configurado em <b>http://192.168.2.48/ocsinventory</b> (ou IP/Host Externo) &nbsp;|&nbsp; <b>API:</b> <font face="Courier">http://[HOST]/cadastro_api/cadastrar.php</font><br/>
     <b>Banco:</b> ocsweb (MySQL/MariaDB) &nbsp;|&nbsp; <b>Token:</b> <font face="Courier">OCS_SEC_TOKEN_8f93e1b742a0489c93df51e7b99c2d15</font> (<font face="Courier">api/config.php</font> = <font face="Courier">client_app/AppConfig.cs</font>)<br/>
-    <b>Modo de teste:</b> <b>Nao sera testado via GPO.</b> Todas as etapas sao por execucao manual com duplo-clique / CMD como Administrador, simulando o comportamento da GPO de forma controlada."""
+    <b>Cenarios Homologados:</b> <b>1) Active Directory (GPO)</b> e <b>2) Fora do Dominio (Workgroup)</b> com instaladores dedicados (<font face="Courier">instalar_workgroup.bat</font> com IP externo e TAG manual/automatica)."""
     tInfo = Table([[Paragraph(info_html, sBody)]], colWidths=[519])
     tInfo.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),C_LIGHT),('BOX',(0,0),(-1,-1),0.7,C_BORDER),('LEFTPADDING',(0,0),(-1,-1),8),('RIGHTPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]))
     story.append(tInfo)
@@ -89,22 +89,22 @@ def build_pdf(filename="docs/roteiro_testes_homologacao.pdf"):
     # Sumario
     story.append(Paragraph("Como usar este roteiro", sH2))
     story.append(Paragraph("Execute na ordem 0 → 1 → 2 → 3. Repita os blocos marcados com <b>◉ Repetir por SO</b> em cada um dos 4 terminais da matriz. Marque <b>OK / FALHA</b> na Checklist Final (pag. final). Logs e evidencias devem ser coletados para aceite.", sBody))
-    story.append(Paragraph("Requisitos minimos dos terminais: VM ou fisico com rede para 192.168.2.48, usuario Administrador local, .NET 3.5 ativo (Win7 ja possui; Win10/11: Ativar Recursos do Windows → .NET Framework 3.5), sem OCS Agent previamente instalado.", sBody))
+    story.append(Paragraph("Requisitos minimos dos terminais: VM ou fisico com rede para o servidor OCS, usuario Administrador local, .NET 3.5 ativo (Win7 ja possui; Win10/11: Ativar Recursos do Windows → .NET Framework 3.5), sem OCS Agent previamente instalado.", sBody))
 
     # ETAPA 0
-    story.append(Paragraph("ETAPA 0 — Sanidade Automatizada (na estacao de dev)", sH1))
-    story.append(Paragraph("Valida o instalador <font face=\"Courier\">scripts/install_ocs_agent.bat</font> sem tocar no servidor. Deve passar 8/8 antes de ir aos terminais.", sBody))
-    story.append(Paragraph("<font face=\"Courier\">cd D:\\DEV\\GitHub\\OCS1<br/>tests\\run_tests.bat<br/>:: ou: python scripts\\run_tests_and_security.py</font>", sCode))
-    story.append(Paragraph("Esperado: <b>T-01..T-03</b> deteccao x64/x86/WOW64, <b>T-04/T-05</b> idempotencia, <b>T-06</b> erro critico se instalador ausente, <b>T-07/T-08</b> log com COMPUTERNAME. Exit 0.", sBody))
+    story.append(Paragraph("ETAPA 0 — Sanidade Automatizada (na estacao de dev / CI)", sH1))
+    story.append(Paragraph("Valida o instalador <font face=\"Courier\">scripts/install_ocs_agent.bat</font> sem tocar no servidor. Deve passar <b>10/10 testes</b> antes de ir aos terminais.", sBody))
+    story.append(Paragraph("<font face=\"Courier\">tests\\run_tests.bat<br/>:: ou: powershell -ExecutionPolicy Bypass -File tests\\test_install_agent.ps1</font>", sCode))
+    story.append(Paragraph("Esperado: <b>T-01..T-03</b> deteccao x64/x86/WOW64, <b>T-04/T-05</b> idempotencia, <b>T-06</b> erro critico se instalador ausente, <b>T-07/T-08</b> log com COMPUTERNAME e prefixo de erro, <b>T-09</b> passagem de URL/IP customizado, <b>T-10</b> passagem de TAG manual customizada. Exit 0.", sBody))
 
     # MATRIZ
     story.append(Paragraph("Matriz de Terminais ◉ Repetir por SO", sH1))
-    headers = [Paragraph("<b>Terminal</b>", sCellH), Paragraph("<b>SO</b>", sCellH), Paragraph("<b>Arch</b>", sCellH), Paragraph("<b>Obs. Execucao Normal</b>", sCellH), Paragraph("<b>Checkpoint</b>", sCellH)]
+    headers = [Paragraph("<b>Terminal</b>", sCellH), Paragraph("<b>SO</b>", sCellH), Paragraph("<b>Arch</b>", sCellH), Paragraph("<b>Obs. Execucao Normal / Workgroup</b>", sCellH), Paragraph("<b>Checkpoint</b>", sCellH)]
     rows = [
         [Paragraph("T-W7-32", sCell), Paragraph("Windows 7 SP1 32-bit", sCell), Paragraph("x86", sCell), Paragraph("Rodar <font face=\"Courier\">.bat</font> e <font face=\"Courier\">.exe</font> como Administrador; .NET 3.5 nativo", sCellSmall), Paragraph("Log x86, Serial BIOS", sCellSmall)],
         [Paragraph("T-W7-64", sCell), Paragraph("Windows 7 SP1 64-bit", sCell), Paragraph("x64", sCell), Paragraph("Mesmo que acima; valida WOW64 e ProgramFiles(x86)", sCellSmall), Paragraph("Log x64", sCellSmall)],
         [Paragraph("T-W10", sCell), Paragraph("Windows 10 22H2 64-bit", sCell), Paragraph("x64", sCell), Paragraph("Ativar .NET 3.5 se necessario; UAC asInvoker", sCellSmall), Paragraph("Form + API OK", sCellSmall)],
-        [Paragraph("T-W11", sCell), Paragraph("Windows 11 64-bit", sCell), Paragraph("x64", sCell), Paragraph("Idem W10; valida manifest Win11", sCellSmall), Paragraph("TAG VIC/PACO/LOCAL", sCellSmall)],
+        [Paragraph("T-W11", sCell), Paragraph("Windows 11 64-bit", sCell), Paragraph("x64", sCell), Paragraph("Idem W10; valida manifest Win11 e Chave Run", sCellSmall), Paragraph("TAG VIC/PACO/LOCAL", sCellSmall)],
     ]
     tMat = Table([headers]+rows, colWidths=[62,128,48,158,123])
     tMat.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),C_NAVY),('VALIGN',(0,0),(-1,-1),'MIDDLE'),('GRID',(0,0),(-1,-1),0.5,C_BORDER),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, C_LIGHT]),('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),('LEFTPADDING',(0,0),(-1,-1),5),('RIGHTPADDING',(0,0),(-1,-1),5)]))
@@ -113,19 +113,19 @@ def build_pdf(filename="docs/roteiro_testes_homologacao.pdf"):
     story.append(Paragraph("Dica: use hostnames com prefixos distintos para validar a regra da TAG: <b>PAC-</b> (ex: PAC-W7-32), <b>PLA/DES/FAZ</b> (ex: PLA-W10-01) e <b>outros</b> (ex: W11-TESTE). Assim testa PACO / VIC / LOCAL em uma rodada.", sBody))
 
     # ETAPA 1
-    story.append(Paragraph("ETAPA 1 — Instalacao do OCS Agent (Execucao Normal, sem GPO)", sH1))
+    story.append(Paragraph("ETAPA 1 — Instalacao do OCS Agent (AD ou Fora do Dominio)", sH1))
     story.append(Paragraph("<b>◉ Repetir por SO</b> &nbsp;|&nbsp; Tempo: ~3 min por terminal", sBody))
     story.append(Paragraph("1) Preparar pacote", sH2))
-    story.append(Paragraph("Gere (ou copie do servidor) os dois exes do Packager com <font face=\"Courier\">utils/Parametros Packager.txt</font> apontando para <font face=\"Courier\">http://192.168.2.48/ocsinventory</font> e <font face=\"Courier\">/TAG=%COMPUTERNAME%</font>: <font face=\"Courier\">OCS-Agent-2.11-x86.exe</font> e <font face=\"Courier\">OCS-Agent-2.11-x64.exe</font>. Deixe os tres arquivos na mesma pasta no terminal: <font face=\"Courier\">install_ocs_agent.bat</font> + 2 exes.", sBody))
+    story.append(Paragraph("Gere (ou copie) os dois exes do Packager (<font face=\"Courier\">OCS-Agent-2.11-x86.exe</font> e <font face=\"Courier\">OCS-Agent-2.11-x64.exe</font>). Em estacoes fora do dominio, inclua os scripts <font face=\"Courier\">instalar_workgroup.bat</font>, <font face=\"Courier\">instalar_workgroup_tag_manual.bat</font> e <font face=\"Courier\">CadastroPatrimonio.exe</font> na mesma pasta.", sBody))
     story.append(Paragraph("2) Executar (como Administrador)", sH2))
-    story.append(Paragraph("<font face=\"Courier\">:: CMD como Administrador na pasta do teste<br/>install_ocs_agent.bat<br/>:: ou duplo-clique > Executar como administrador</font>", sCode))
+    story.append(Paragraph("<font face=\"Courier\">:: Cenario A - Padrao ou GPO:<br/>install_ocs_agent.bat [URL_OPCIONAL] [TAG_OPCIONAL]<br/>:: Cenario B - Workgroup / Fora do Dominio (IP externo via variavel):<br/>instalar_workgroup.bat<br/>:: Cenario C - Workgroup com TAG manual:<br/>instalar_workgroup_tag_manual.bat</font>", sCode))
     story.append(Paragraph("3) Validar no terminal", sH2))
     story.append(Paragraph("<font face=\"Courier\">sc query \"OCS Inventory Service\"  &nbsp; :: STATE RUNNING<br/>dir \"%ProgramFiles%\\OCS Inventory Agent\\OCSInventory.exe\"<br/>dir \"%ProgramFiles(x86)%\\OCS Inventory Agent\\OCSInventory.exe\"<br/>type C:\\Windows\\Temp\\ocs_agent_install.log</font>", sCode))
     checks1 = [
-        "Log contem <b>COMPUTERNAME</b> e <b>Arquitetura detectada: x64/x86</b> + instalador correto selecionado",
-        "Servico <b>OCS Inventory Service</b> existe; <b>exit 0</b>",
-        "Execute novamente o .bat → log <b>ja esta instalado / Nenhuma acao necessaria</b> (idempotencia)",
-        "Forcar teste de erro: renomeie os 2 exes e rode → <b>exit 1</b> + <b>ERRO CRITICO</b> no log (depois restaure)",
+        "Log contem <b>COMPUTERNAME</b>, <b>Servidor OCS</b>, <b>TAG OCS</b> e <b>Arquitetura detectada: x64/x86</b>",
+        "Servico <b>OCS Inventory Service</b> existe e esta em execucao; <b>exit 0</b>",
+        "Execute novamente o script → log <b>ja esta instalado / Nenhuma acao necessaria</b> (idempotencia)",
+        "No Cenario Workgroup: verifica criacao de <b>HKLM\\Software\\OCS_Inventario\\ApiEndpointUrl</b> e chave <b>Run</b>",
     ]
     for c in checks1:
         story.append(Paragraph(f"• {c}", sBullet))
@@ -176,14 +176,17 @@ def build_pdf(filename="docs/roteiro_testes_homologacao.pdf"):
     story.append(Paragraph("Checklist Final — Marque OK / FALHA por terminal", sH1))
     chk_headers = [Paragraph("<b>Item</b>", sCellH), Paragraph("<b>W7 32</b>", sCellH), Paragraph("<b>W7 64</b>", sCellH), Paragraph("<b>W10</b>", sCellH), Paragraph("<b>W11</b>", sCellH)]
     chk_rows = [
-        ["E1: .bat manual OK + log arquitetura", "", "", "", ""],
+        ["E0: Sanidade Automatizada (10/10 PASS)", "☐ OK", "☐ OK", "☐ OK", "☐ OK"],
+        ["E1: .bat manual / GPO OK + log arquit.", "", "", "", ""],
+        ["E1: Workgroup: IP externo / chave Run", "", "", "", ""],
         ["E1: Servico OCS + idempotencia (2ª exec)", "", "", "", ""],
-        ["E1: OCS Server hardware.TAG = hostname", "", "", "", ""],
+        ["E1: OCS Server TAG = hostname / custom", "", "", "", ""],
         ["E2A: curl 200 + 401 sem token", "—", "—", "—", "—"],
         ["E2B: Form abre (10s amarelo)", "", "", "", ""],
+        ["E2B: Leitura Endpoint via Registro HKLM", "", "", "", ""],
         ["E2B: Filtro Nome/Patrimonio + Serial BIOS", "", "", "", ""],
         ["E2B: Gravar → flag HKCU/HKLM/%ProgramData%", "", "", "", ""],
-        ["E2B: Reabrir → encerra sem janela", "", "", "", ""],
+        ["E2B: Reabrir → encerra sem janela (<10ms)", "", "", "", ""],
         ["E2B: Prazo 120s vermelho (simulado)", "", "", "", ""],
         ["E2B: Falha rede nao grava flag", "", "", "", ""],
         ["E3: dry-run sem gravar", "—", "—", "—", "—"],
@@ -193,7 +196,12 @@ def build_pdf(filename="docs/roteiro_testes_homologacao.pdf"):
     ]
     data = [chk_headers]
     for r in chk_rows:
-        data.append([Paragraph(r[0], sCellSmall)] + [Paragraph("☐ OK  ☐ FALHA", sCellSmall) for _ in range(4)])
+        if r[0].startswith("E0:"):
+            data.append([Paragraph(r[0], sCellSmall)] + [Paragraph("☐ OK", sCellSmall) for _ in range(4)])
+        elif r[1] == "—":
+            data.append([Paragraph(r[0], sCellSmall)] + [Paragraph("—", sCellSmall) for _ in range(4)])
+        else:
+            data.append([Paragraph(r[0], sCellSmall)] + [Paragraph("☐ OK  ☐ FALHA", sCellSmall) for _ in range(4)])
     # adjust first data row for E2A etc with —
     tChk = Table(data, colWidths=[198,80,80,80,81])
     tChk.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),C_NAVY),('VALIGN',(0,0),(-1,-1),'MIDDLE'),('GRID',(0,0),(-1,-1),0.5,C_BORDER),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, colors.HexColor("#F8FAFC")]),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4)]))
