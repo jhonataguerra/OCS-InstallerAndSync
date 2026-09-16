@@ -94,6 +94,8 @@ orchestration_ocs_inventory_system/
 │   └── sync_ocs_patrimonio.py             # Script alternativo em Python 3
 │
 └── docs/                                   # Manuais e Relatórios
+    ├── documento_unico_manual_completo.pdf # Documento Único Unificado Oficial (formatado A4 para impressão)
+    ├── roteiro_testes_homologacao.pdf      # Roteiro prático guiado de testes e homologação em PDF
     ├── relatorio_seguranca_matriz_criticidade.pdf # Relatório ilustrado de auditoria
     ├── instalacao_workgroup_instrucoes.md  # Manual completo de instalação Fora do Domínio
     ├── etapa1_gpo_instrucoes.md            # Manual do OCS Agent via GPO (Active Directory)

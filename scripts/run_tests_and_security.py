@@ -100,11 +100,23 @@ def run_security_gate(tests_exit_code: int, force: bool) -> None:
             errors='replace'
         )
 
+        unified_script = os.path.join(REPO_ROOT, 'scripts', 'generate_unified_documentation_pdf.py')
+        if os.path.isfile(unified_script):
+            print('  [->] Gerando Documento Unico Unificado de Engenharia e Homologacao...')
+            subprocess.run(
+                [sys.executable, unified_script],
+                cwd=REPO_ROOT,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+
         print()
         if sec_result.returncode == 0:
             banner('RESULTADO FINAL - SUCESSO COMPLETO', char='-')
             print('  [OK] Suite de testes  : APROVADA')
             print('  [OK] Relatorio PDF    : GERADO')
+            print('  [OK] Documento Unico  : GERADO (docs/documento_unico_manual_completo.pdf)')
             print(f'  Concluido em          : {timestamp()}')
             print()
             sys.exit(0)
