@@ -69,7 +69,7 @@ if not exist "!CSC_EXE!" (
 )
 
 set "REFERENCES=/r:System.dll,System.Windows.Forms.dll,System.Drawing.dll,System.Management.dll,System.Core.dll"
-set "SOURCES=\"%~dp0AppConfig.cs\" \"%~dp0RegistryHelper.cs\" \"%~dp0SystemInfoCollector.cs\" \"%~dp0MainForm.Designer.cs\" \"%~dp0MainForm.cs\" \"%~dp0Program.cs\""
+set "SOURCES="%~dp0AppConfig.cs" "%~dp0RegistryHelper.cs" "%~dp0SystemInfoCollector.cs" "%~dp0MainForm.Designer.cs" "%~dp0MainForm.cs" "%~dp0Program.cs""
 
 echo [INFO] Compilando executavel unificado CadastroPatrimonio.exe...
 "!CSC_EXE!" /target:winexe /platform:anycpu /optimize+ /win32manifest:"%~dp0app.manifest.xml" /out:"%~dp0CadastroPatrimonio.exe" %REFERENCES% %SOURCES%
