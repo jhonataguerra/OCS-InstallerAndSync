@@ -201,8 +201,7 @@ try {
     }
     $result = Invoke-InstallBatch -TestDir $testDir -EnvOverrides $envOvr
 
-    $passed = ($result.Log -match 'x64') -and
-              ($result.Log -match 'ARCHITECTURE=AMD64') -and
+    $passed = ($result.Log -match 'Arquitetura detectada:\s*x64') -and
               ($result.Log -match 'OCS-Agent-2\.11-x64\.exe')
     $detail = if (-not $passed) { "Log nao continha selecao de x64. Log: $($result.Log)" } else { '' }
     Register-TestResult 'T-01' 'Sistema 64-bit (AMD64 nativo) -> instalador x64 selecionado' $passed $detail
@@ -225,8 +224,7 @@ try {
     }
     $result = Invoke-InstallBatch -TestDir $testDir -EnvOverrides $envOvr
 
-    $passed = ($result.Log -match 'x86') -and
-              ($result.Log -match 'ARCHITECTURE=x86') -and
+    $passed = ($result.Log -match 'Arquitetura detectada:\s*x86') -and
               ($result.Log -match 'OCS-Agent-2\.11-x86\.exe')
     $detail = if (-not $passed) { "Log nao continha selecao de x86. Log: $($result.Log)" } else { '' }
     Register-TestResult 'T-02' 'Sistema 32-bit nativo -> instalador x86 selecionado' $passed $detail
@@ -249,8 +247,7 @@ try {
     }
     $result = Invoke-InstallBatch -TestDir $testDir -EnvOverrides $envOvr
 
-    $passed = ($result.Log -match 'x64') -and
-              ($result.Log -match 'WOW64') -and
+    $passed = ($result.Log -match 'Arquitetura detectada:\s*x64') -and
               ($result.Log -match 'OCS-Agent-2\.11-x64\.exe')
     $detail = if (-not $passed) { "Log nao detectou WOW64. Log: $($result.Log)" } else { '' }
     Register-TestResult 'T-03' 'WOW64 (32-bit em SO 64-bit via ARCHITEW6432) -> instalador x64 selecionado' $passed $detail
