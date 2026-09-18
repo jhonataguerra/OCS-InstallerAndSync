@@ -43,6 +43,13 @@ namespace OCSCadastroApp
         private Label lblStatus;
         private Timer timerBloqueio;
 
+        private Panel panelFooter;
+        private Panel panelFooterLine;
+        private Label lblFooterPrefeitura;
+        private Label lblFooterSecretaria;
+        private Label lblFooterDiretoria;
+
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -92,10 +99,17 @@ namespace OCSCadastroApp
             this.lblStatus = new Label();
             this.timerBloqueio = new Timer(this.components);
 
+            this.panelFooter = new Panel();
+            this.panelFooterLine = new Panel();
+            this.lblFooterPrefeitura = new Label();
+            this.lblFooterSecretaria = new Label();
+            this.lblFooterDiretoria = new Label();
+
             this.panelHeader.SuspendLayout();
             this.panelContent.SuspendLayout();
             this.panelSysInfo.SuspendLayout();
             this.panelAviso.SuspendLayout();
+            this.panelFooter.SuspendLayout();
             this.SuspendLayout();
 
             // 
@@ -171,11 +185,10 @@ namespace OCSCadastroApp
             this.panelContent.Controls.Add(this.lblPatrimonio);
             this.panelContent.Controls.Add(this.txtNome);
             this.panelContent.Controls.Add(this.lblNome);
-            this.panelContent.Dock = DockStyle.Fill;
-            this.panelContent.Location = new Point(0, 78);
+            this.panelContent.Location = new Point(0, 88);
             this.panelContent.Name = "panelContent";
             this.panelContent.Padding = new Padding(24, 16, 24, 16);
-            this.panelContent.Size = new Size(540, 472);
+            this.panelContent.Size = new Size(540, 422);
             this.panelContent.TabIndex = 1;
 
             // 
@@ -469,13 +482,76 @@ namespace OCSCadastroApp
             this.timerBloqueio.Tick += new System.EventHandler(this.TimerBloqueio_Tick);
 
             // 
+            // panelFooterLine
+            // 
+            this.panelFooterLine.BackColor = Color.FromArgb(37, 99, 235); // Blue 600
+            this.panelFooterLine.Dock = DockStyle.Top;
+            this.panelFooterLine.Location = new Point(0, 0);
+            this.panelFooterLine.Name = "panelFooterLine";
+            this.panelFooterLine.Size = new Size(540, 1);
+            this.panelFooterLine.TabIndex = 0;
+
+            // 
+            // lblFooterPrefeitura
+            // 
+            this.lblFooterPrefeitura.AutoSize = false;
+            this.lblFooterPrefeitura.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            this.lblFooterPrefeitura.ForeColor = Color.FromArgb(51, 65, 85); // Slate 700
+            this.lblFooterPrefeitura.Location = new Point(0, 10);
+            this.lblFooterPrefeitura.Name = "lblFooterPrefeitura";
+            this.lblFooterPrefeitura.Size = new Size(540, 16);
+            this.lblFooterPrefeitura.Text = "Prefeitura de Santa B\u00e1rbara d\u0027Oeste";
+            this.lblFooterPrefeitura.TextAlign = ContentAlignment.MiddleCenter;
+
+            // 
+            // lblFooterSecretaria
+            // 
+            this.lblFooterSecretaria.AutoSize = false;
+            this.lblFooterSecretaria.Font = new Font("Segoe UI", 7.5F, FontStyle.Regular, GraphicsUnit.Point);
+            this.lblFooterSecretaria.ForeColor = Color.FromArgb(100, 116, 139); // Slate 500
+            this.lblFooterSecretaria.Location = new Point(0, 28);
+            this.lblFooterSecretaria.Name = "lblFooterSecretaria";
+            this.lblFooterSecretaria.Size = new Size(540, 14);
+            this.lblFooterSecretaria.Text = "Secretaria Municipal de Administra\u00e7\u00e3o";
+            this.lblFooterSecretaria.TextAlign = ContentAlignment.MiddleCenter;
+
+            // 
+            // lblFooterDiretoria
+            // 
+            this.lblFooterDiretoria.AutoSize = false;
+            this.lblFooterDiretoria.Font = new Font("Segoe UI", 7.5F, FontStyle.Regular, GraphicsUnit.Point);
+            this.lblFooterDiretoria.ForeColor = Color.FromArgb(100, 116, 139); // Slate 500
+            this.lblFooterDiretoria.Location = new Point(0, 43);
+            this.lblFooterDiretoria.Name = "lblFooterDiretoria";
+            this.lblFooterDiretoria.Size = new Size(540, 14);
+            this.lblFooterDiretoria.Text = "Diretoria de Gest\u00e3o de Tecnologia da Informa\u00e7\u00e3o";
+            this.lblFooterDiretoria.TextAlign = ContentAlignment.MiddleCenter;
+
+            // 
+            // panelFooter
+            // 
+            this.panelFooter.BackColor = Color.FromArgb(248, 250, 252); // Slate 50
+            this.panelFooter.BorderStyle = BorderStyle.None;
+            this.panelFooter.Controls.Add(this.lblFooterDiretoria);
+            this.panelFooter.Controls.Add(this.lblFooterSecretaria);
+            this.panelFooter.Controls.Add(this.lblFooterPrefeitura);
+            this.panelFooter.Controls.Add(this.panelFooterLine);
+            this.panelFooter.Dock = DockStyle.Bottom;
+            this.panelFooter.Location = new Point(0, 510);
+            this.panelFooter.Name = "panelFooter";
+            this.panelFooter.Padding = new Padding(24, 0, 24, 8);
+            this.panelFooter.Size = new Size(540, 60);
+            this.panelFooter.TabIndex = 2;
+
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
             this.BackColor = Color.White;
-            this.ClientSize = new Size(540, 490);
+            this.ClientSize = new Size(540, 570);
             this.Controls.Add(this.panelContent);
+            this.Controls.Add(this.panelFooter);
             this.Controls.Add(this.panelHeader);
             this.Font = new Font("Segoe UI", 9F);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -494,6 +570,7 @@ namespace OCSCadastroApp
             this.panelSysInfo.PerformLayout();
             this.panelAviso.ResumeLayout(false);
             this.panelAviso.PerformLayout();
+            this.panelFooter.ResumeLayout(false);
             this.ResumeLayout(false);
         }
     }
