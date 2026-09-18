@@ -60,9 +60,49 @@ mais exibida."                           │
 
 ---
 
-## 4. Reset para Testes de Homologação
+## 4. Homologação — Simular 7 Dias ou Mais Sem Cadastro
 
-Para reabrir o formulário em uma máquina de teste e zerar o contador:
+Para acionar o **modo obrigatório** (aviso vermelho + bloqueio de 2 minutos) em uma máquina de teste, é necessário definir a data de primeira execução em **todos os locais** que a aplicação verifica, na seguinte ordem de prioridade:
+
+| Prioridade | Local | Requer Admin? |
+|---|---|---|
+| 1ª | `HKLM\Software\OCS_Inventario\PrimeiraExecucao` | ✅ Sim |
+| 2ª | `HKCU\Software\OCS_Inventario\PrimeiraExecucao` | ❌ Não |
+| 3ª | `C:\ProgramData\OCS_Inventario\first_run.dat` | ❌ Não |
+
+> **Atenção:** Se existir um valor em `HKLM`, ele tem prioridade absoluta e os demais são ignorados. Por isso, definir apenas `HKCU` pode não ter efeito caso `HKLM` já contenha um valor diferente.
+
+### Comando Completo (executar como Administrador)
+
+```powershell
+# 1. HKLM — prioridade máxima (requer Admin)
+reg add "HKLM\Software\OCS_Inventario" /v PrimeiraExecucao /t REG_SZ /d "2026-08-10 08:00:00" /f
+
+# 2. HKCU — prioridade secundária
+reg add "HKCU\Software\OCS_Inventario" /v PrimeiraExecucao /t REG_SZ /d "2026-08-10 08:00:00" /f
+
+# 3. Arquivo first_run.dat — fallback
+$dir = "$env:ProgramData\OCS_Inventario"
+if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+Set-Content -Path "$dir\first_run.dat" -Value "2026-08-10 08:00:00" -Encoding UTF8
+```
+
+Após definir esses valores, abra o `CadastroPatrimonio.exe` — ele deverá exibir o **aviso vermelho** com o cronômetro de 2 minutos.
+
+---
+
+## 5. Reset para Testes de Homologação
+
+Para remover a data de primeira execução e resetar o comportamento da aplicação (o app registrará a data atual como nova primeira execução no próximo logon):
+
+```powershell
+# Remove os valores de data (o app vai registrar a data atual como nova primeira execução)
+reg delete "HKLM\Software\OCS_Inventario" /v PrimeiraExecucao /f 2>$null
+reg delete "HKCU\Software\OCS_Inventario" /v PrimeiraExecucao /f 2>$null
+Remove-Item "C:\ProgramData\OCS_Inventario\first_run.dat" -ErrorAction SilentlyContinue
+```
+
+Para reset completo (inclusive flag de conclusão):
 
 ```cmd
 reg delete "HKCU\Software\OCS_Inventario" /f
