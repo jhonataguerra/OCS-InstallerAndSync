@@ -28,8 +28,17 @@ if "!WIN_MAJOR!.!WIN_MINOR!"=="6.1" (
     )
 )
 
+rem 3. Estrategia de Fallback Resiliente (Unificado ou Qualquer Binario Presente)
 if not defined TARGET_EXE (
-    if exist "%SCRIPT_DIR%CadastroPatrimonio.exe" set "TARGET_EXE=%SCRIPT_DIR%CadastroPatrimonio.exe"
+    if exist "%SCRIPT_DIR%CadastroPatrimonio.exe" (
+        set "TARGET_EXE=%SCRIPT_DIR%CadastroPatrimonio.exe"
+    ) else if exist "%SCRIPT_DIR%CadastroPatrimonio_Win10_net46.exe" (
+        set "TARGET_EXE=%SCRIPT_DIR%CadastroPatrimonio_Win10_net46.exe"
+    ) else if exist "%SCRIPT_DIR%CadastroPatrimonio_Win11_net48.exe" (
+        set "TARGET_EXE=%SCRIPT_DIR%CadastroPatrimonio_Win11_net48.exe"
+    ) else if exist "%SCRIPT_DIR%CadastroPatrimonio_Win7_net35.exe" (
+        set "TARGET_EXE=%SCRIPT_DIR%CadastroPatrimonio_Win7_net35.exe"
+    )
 )
 if defined TARGET_EXE (
     start "" "!TARGET_EXE!"

@@ -9,8 +9,9 @@ Solução completa, leve, segura e compatível com **Windows 7 (32/64 bits), Win
 1. [Visão Geral e Arquitetura](#-visão-geral-e-arquitetura)
 2. [Estrutura do Repositório](#-estrutura-do-repositório)
 3. [Guia de Implantação Passo a Passo](#-guia-de-implantação-passo-a-passo)
-   * [Passo 1: Gerar o Pacote OCS no OcsPackager](#passo-1-gerar-o-pacote-ocs-no-ocspackager)
-   * [Passo 2: Distribuir o OCS Agent via GPO (Startup)](#passo-2-distribuir-o-ocs-agent-via-gpo-startup)
+   * [Passo 1: Gerar os Pacotes OCS no OcsPackager (Dual x86/x64)](#passo-1-gerar-os-pacotes-ocs-no-ocspackager-dual-x86x64)
+   * [Passo 2A: Distribuir o OCS Agent via GPO (Active Directory)](#passo-2a-distribuir-o-ocs-agent-via-gpo-startup)
+   * [Passo 2B: Instalação Fora do Active Directory (Workgroup)](#passo-2b-instalação-fora-do-active-directory-workgroup)
    * [Passo 3: Configurar o Banco de Dados e a API de Ingestão](#passo-3-configurar-o-banco-de-dados-e-a-api-de-ingestão)
    * [Passo 4: Distribuir a Aplicação de Cadastro (Logon)](#passo-4-distribuir-a-aplicação-de-cadastro-logon)
    * [Passo 5: Configurar a Sincronização Automática no OCS Server](#passo-5-configurar-a-sincronização-automática-no-ocs-server)
@@ -24,36 +25,36 @@ Solução completa, leve, segura e compatível com **Windows 7 (32/64 bits), Win
 O projeto conecta **3 etapas integradas**:
 
 ```text
-[ Active Directory / GPO ]
+[ Active Directory / GPO ou Workgroup ]
        │
-       ├─► (1. GPO Startup) ──► install_ocs_agent.bat (Batch Puro, Sem PowerShell)
-       │                           │
-       │                           └─► Detecta x86/x64 e instala OCS-Agent-2.11-x86.exe ou OCS-Agent-2.11-x64.exe (/TAG=%COMPUTERNAME%)
+       ├─► (1. GPO Startup / Workgroup) ──► install_ocs_agent.bat (Batch Puro, Sem PowerShell)
        │                                     │
-       │                                     ▼
-       │                              [ OCS Server ] ◄──────────────────────────────┐
-       │                              (Inventário Base: HW/SW + Hostname na TAG)    │
-       │                                                                            │
-       └─► (2. GPO Logon)   ──► CadastroPatrimonio.exe (.NET 3.5 Nativo)            │
-                                   │                                                │
-                                   ├─► Verifica se já concluiu (Encerra em <10ms)   │
-                                   ├─► Coleta WMI (Serial BIOS, SO, Arch, Hostname) │
-                                   ├─► Formulário: Responsável, Nº Patrimônio, Setor│
-                                   ├─► Bloqueio: 10s (Tolerância) ou 2min (7+ dias) │
-                                   │                                                │
-                                   ▼ (POST HTTP + X-API-TOKEN)                      │
-                         [ API PHP / cadastrar.php ]                                │
-                                   │                                                │
-                                   ▼ (UPSERT com Chave Única no Hostname)           │
-                         [ MariaDB / MySQL ]                                        │
-                         (Tabela: computadores_cadastro)                            │
-                                   │                                                │
-                                   ▼                                                │
-       (3. Cron no Servidor) ──► sync_ocs_patrimonio.php ───────────────────────────┘
-                                 Localiza por hardware.NAME = hostname
-                                 Atualiza SOMENTE accountinfo.TAG = prefixo + patrimonio
-                                 PAC → PACO-{patrimonio} | PLA/DES/FAZ → VIC-{patrimonio} | outros → LOCAL-{patrimonio}
-                                 Exemplo: PLA-PC01-123456 → VIC-123456 | hardware.NAME preservado
+       │                                     └─► Detecta x86/x64 e instala OCS-Agent-2.11-x86.exe ou OCS-Agent-2.11-x64.exe (/TAG=%OCS_TAG%)
+       │                                           │
+       │                                           ▼
+       │                                    [ OCS Server ] ◄──────────────────────────────┐
+       │                                    (Inventário Base: HW/SW + Hostname na TAG)    │
+       │                                                                                  │
+       └─► (2. GPO Logon / Run Registry)──► CadastroPatrimonio.exe (Multi-.NET 3.5 / 4.x) │
+                                           │                                              │
+                                           ├─► Verifica se já concluiu (Encerra em <10ms) │
+                                           ├─► Coleta WMI (Serial BIOS, SO, Arch, Hostname)
+                                           ├─► Formulário: Responsável, Nº Patrimônio, Setor
+                                           ├─► Bloqueio: 10s (Tolerância) ou 2min (7+ dias)
+                                           │                                              │
+                                           ▼ (POST HTTP + X-API-TOKEN)                    │
+                                 [ API PHP / cadastrar.php ]                              │
+                                           │                                              │
+                                           ▼ (UPSERT com Chave Única no Hostname)         │
+                                 [ MariaDB / MySQL ]                                      │
+                                 (Tabela: computadores_cadastro)                          │
+                                           │                                              │
+                                           ▼                                              │
+               (3. Cron no Servidor) ──► sync_ocs_patrimonio.php ─────────────────────────┘
+                                         Localiza por hardware.NAME = hostname
+                                         Atualiza SOMENTE accountinfo.TAG = prefixo + patrimonio
+                                         PAC → PACO-{patrimonio} | PLA/DES/FAZ → VIC-{patrimonio} | outros → LOCAL-{patrimonio}
+                                         Exemplo: PLA-PC01-123456 → VIC-123456 | hardware.NAME preservado
 ```
 
 ---
@@ -61,62 +62,68 @@ O projeto conecta **3 etapas integradas**:
 ## 📁 Estrutura do Repositório
 
 ```text
-simulate_ocs_seven_days/
+OCS-InstallerAndSync/
 │
-├── scripts/                                     # Scripts de instalação e automação
-│   ├── install_ocs_agent.bat                    # Instalação silenciosa do OCS Agent (Batch Puro)
-│   ├── instalar_workgroup.bat                   # Instalação para ambientes sem domínio (Workgroup)
-│   ├── instalar_workgroup_tag_manual.bat        # Instalação Workgroup com TAG configurada manualmente
-│   ├── generate_security_report_pdf.py          # Gerador do relatório de segurança em PDF
-│   ├── generate_test_roadmap_pdf.py             # Gerador do roteiro de testes de homologação em PDF
-│   └── run_tests_and_security.py               # Orquestrador: testes + gate de segurança (gate-PDF)
+├── scripts/                                         # Scripts de instalação e automação
+│   ├── install_ocs_agent.bat                        # Instalação silenciosa do OCS Agent (Batch Puro)
+│   ├── instalar_workgroup.bat                       # Instalador mestre para computadores fora do domínio (Workgroup)
+│   ├── instalar_workgroup_tag_manual.bat            # Instalador para Workgroup com input manual de TAG no prompt
+│   ├── generate_security_report_pdf.py              # Gerador do relatório de segurança em PDF (ReportLab)
+│   ├── generate_test_roadmap_pdf.py                 # Gerador do roteiro de testes de homologação em PDF
+│   ├── generate_unified_documentation_pdf.py        # Gerador do Documento Único Unificado Oficial em PDF
+│   └── run_tests_and_security.py                   # Orquestrador: testes (10/10) + gates em PDF
 │
-├── database/                                    # Banco de Dados
-│   └── schema.sql                              # Tabela computadores_cadastro (MySQL / MariaDB)
+├── database/                                        # Banco de Dados
+│   └── schema.sql                                  # Tabela computadores_cadastro (MySQL / MariaDB)
 │
-├── api/                                         # API PHP de Ingestão (Hospedada no OCS Server)
-│   ├── config.php                              # Credenciais e Token X-API-TOKEN
-│   └── cadastrar.php                           # Endpoint protegido e sanitizado
+├── api/                                             # API PHP de Ingestão (Hospedada no OCS Server)
+│   ├── config.php                                  # Credenciais e Token X-API-TOKEN
+│   └── cadastrar.php                               # Endpoint protegido e sanitizado
 │
-├── client_app/                                  # Aplicação Windows Forms (.NET 3.5 AnyCPU)
-│   ├── CadastroPatrimonio.exe                  # Executável compilado pronto para distribuição
-│   ├── CadastroPatrimonio.exe.config           # Configuração de compatibilidade .NET (supportedRuntime)
-│   ├── Program.cs                              # Mutex de instância única e checagem de registro
-│   ├── MainForm.cs                             # Interface, filtros PT-BR e temporizador
-│   ├── MainForm.Designer.cs                    # Layout moderno da janela
-│   ├── SystemInfoCollector.cs                  # Coleta WMI com filtro de BIOS genérica
-│   ├── RegistryHelper.cs                       # Controle de prazos e execução única
-│   ├── AppConfig.cs                            # Configurações de API e Token
-│   ├── app.manifest                            # Manifest de compatibilidade (Win7 a Win11)
-│   ├── app.manifest.xml                        # Cópia do manifest em formato XML explícito
-│   ├── iniciar_cadastro.bat                    # Atalho batch para abrir o executável manualmente
-│   └── build.bat                               # Compilador nativo via csc.exe
+├── client_app/                                      # Aplicação Windows Forms Multi-.NET
+│   ├── CadastroPatrimonio.exe                      # Executável unificado pronto para distribuição
+│   ├── CadastroPatrimonio.exe.config               # Configuração multi-runtime .NET (v2.0, v4.0, v4.6, v4.8)
+│   ├── CadastroPatrimonio_Win7_net35.exe           # Binário otimizado para Windows 7 SP1 (.NET 3.5)
+│   ├── CadastroPatrimonio_Win10_net46.exe          # Binário otimizado para Windows 10 (.NET 4.6)
+│   ├── CadastroPatrimonio_Win11_net48.exe          # Binário otimizado para Windows 11 (.NET 4.8)
+│   ├── Program.cs                                  # Mutex de instância única e checagem de registro
+│   ├── MainForm.cs                                 # Interface, filtros PT-BR e temporizador
+│   ├── MainForm.Designer.cs                        # Layout moderno da janela com rodapé institucional
+│   ├── SystemInfoCollector.cs                      # Coleta WMI com filtro de BIOS genérica
+│   ├── RegistryHelper.cs                           # Controle de prazos e execução única
+│   ├── AppConfig.cs                                # Configurações dinâmicas (Registro / Fallback)
+│   ├── app.manifest                                # Manifest de compatibilidade (Win7 a Win11)
+│   ├── app.manifest.xml                            # Manifest em formato XML explícito
+│   ├── iniciar_cadastro.bat                        # Launcher com detecção de SO e fallback multi-.NET
+│   └── build.bat                                   # Compilador nativo via csc.exe
 │
-├── sync/                                        # Processo de Sincronização OCS
-│   ├── config_sync.php                         # Conexão com a base nativa do OCS
-│   ├── sync_ocs_patrimonio.php                 # Script CLI principal em PHP (com prefixação de TAG)
-│   ├── sync_ocs_patrimonio_apenas_patrimonio.php # Variante: atualiza apenas o nº de patrimônio na TAG
-│   ├── sync_ocs_patrimonio_old.php             # Versão anterior do script de sincronização (referência)
-│   └── sync_ocs_patrimonio.py                  # Script alternativo em Python 3
+├── sync/                                            # Processo de Sincronização OCS
+│   ├── config_sync.php                             # Conexão com a base nativa do OCS
+│   ├── sync_ocs_patrimonio.php                     # Script CLI principal em PHP (com prefixação de TAG)
+│   ├── sync_ocs_patrimonio_apenas_patrimonio.php   # Variante: atualiza apenas o nº de patrimônio na TAG
+│   ├── sync_ocs_patrimonio_old.php                 # Versão anterior do script de sincronização
+│   └── sync_ocs_patrimonio.py                      # Script alternativo em Python 3
 │
-├── tests/                                       # Suite de Testes Automatizados
-│   ├── README_testes.md                        # Documentação da suite de testes
-│   ├── run_tests.bat                           # Wrapper batch para execução dos testes
-│   └── test_install_agent.ps1                  # Suite completa de testes (PowerShell 3.0+, T-01 a T-08)
+├── tests/                                           # Suíte de Testes Automatizados
+│   ├── README_testes.md                            # Documentação da suíte de testes (T-01 a T-10)
+│   ├── run_tests.bat                               # Wrapper batch para execução dos testes
+│   └── test_install_agent.ps1                      # Suíte de 10 testes (PowerShell 3.0+, T-01 a T-10)
 │
-├── utils/                                       # Utilitários e Instaladores
-│   ├── Agents/                                 # Instaladores originais do OCS Agent (x86 e x64)
-│   ├── Server/                                 # Arquivos do servidor OCS
-│   ├── OCS-Agent-2.11-Universal.exe            # Pacote Universal pré-gerado (OcsPackager)
-│   └── Parametros Packager.txt                 # Parâmetros de linha de comando para o OcsPackager
+├── utils/                                           # Utilitários e Instaladores
+│   ├── Agents/                                     # Instaladores originais do OCS Agent (x86 e x64)
+│   ├── Server/                                     # Arquivos do servidor OCS
+│   ├── OCS-Agent-2.11-Universal.exe                # Pacote Universal pré-gerado (OcsPackager)
+│   └── Parametros Packager.txt                     # Parâmetros de linha de comando para o OcsPackager
 │
-└── docs/                                        # Manuais e Relatórios
+└── docs/                                            # Manuais e Relatórios Oficiais
+    ├── documento_unico_manual_completo.pdf         # Documento Único Unificado Oficial (A4 para impressão)
     ├── relatorio_seguranca_matriz_criticidade.pdf  # Relatório ilustrado de auditoria de segurança
-    ├── roteiro_testes_homologacao.pdf              # Roteiro de testes de homologação gerado automaticamente
-    ├── etapa1_gpo_instrucoes.md                # Manual do OCS Agent via GPO
-    ├── etapa2_backend_instrucoes.md            # Manual do Banco MySQL e API
-    ├── etapa2_aplicacao_instrucoes.md          # Manual do Executável de Cadastro + Homologação
-    └── etapa3_sincronizacao_instrucoes.md      # Manual do Crontab de Sincronização
+    ├── roteiro_testes_homologacao.pdf              # Roteiro de testes de homologação em PDF
+    ├── instalacao_workgroup_instrucoes.md          # Manual de instalação Fora do Domínio (Workgroup)
+    ├── etapa1_gpo_instrucoes.md                    # Manual do OCS Agent via GPO (Active Directory)
+    ├── etapa2_backend_instrucoes.md                # Manual do Banco MySQL e API
+    ├── etapa2_aplicacao_instrucoes.md              # Manual do Executável de Cadastro + Homologação
+    └── etapa3_sincronizacao_instrucoes.md          # Manual do Crontab de Sincronização
 ```
 
 ---
@@ -133,7 +140,6 @@ Para gerar **dois pacotes separados** (x86 e x64) — o `install_ocs_agent.bat` 
 1. Extraia `OCS-Windows-Agent-2.11.0.1_x86.zip` de `utils/Agents/`.
 2. Abra o **OcsPackager.exe** (em `utils/Agents/OCS-Windows-Packager-2.8.1.zip`) e configure:
    * **Exe file:** `OCS-Windows-Agent-Setup-x86.exe`
-   * **Certificate / Other files:** *(Deixe em branco)*
    * **Command line options:**
      ```text
      /S /NOSPLASH /NO_SYSTRAY /SERVER=http://192.168.2.48/ocsinventory /SSL=0 /DEBUG=2 /TAG=%COMPUTERNAME% /NOW
@@ -146,18 +152,30 @@ Para gerar **dois pacotes separados** (x86 e x64) — o `install_ocs_agent.bat` 
 2. Mesma configuração, com **Exe file:** `OCS-Windows-Agent-Setup-x64.exe` e **Label:** `OCS-Agent-2.11-x64`.
 3. Gere e renomeie para **`OCS-Agent-2.11-x64.exe`**.
 
-> Parâmetros completos em `utils/Parametros Packager.txt` (`http://192.168.2.48/ocsinventory`).
-
-
 ---
 
-### Passo 2: Distribuir o OCS Agent via GPO (Startup)
-1. Coloque o [install_ocs_agent.bat](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/simulate_ocs_seven_days/scripts/install_ocs_agent.bat), o `OCS-Agent-2.11-x86.exe` e o `OCS-Agent-2.11-x64.exe` (ou `OCS-Agent-2.11-Universal.exe`) na mesma pasta de rede compartilhada (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs`).
+### Passo 2A: Distribuir o OCS Agent via GPO (Startup)
+1. Coloque o [install_ocs_agent.bat](scripts/install_ocs_agent.bat), o `OCS-Agent-2.11-x86.exe` e o `OCS-Agent-2.11-x64.exe` (ou `OCS-Agent-2.11-Universal.exe`) na mesma pasta de rede compartilhada (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs`).
 2. No **GPMC (Group Policy Management Console)**:
    * Edite a GPO de computadores.
    * Vá em: `Configurações do Computador` -> `Políticas` -> `Configurações do Windows` -> `Scripts (Inicialização/Encerramento)` -> **Inicialização (Startup)**.
    * Aponte para: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\ocs\install_ocs_agent.bat`.
 3. O script roda nativamente como `SYSTEM` antes do logon, não utiliza PowerShell e verifica se o serviço já existe para não reinstalar a cada boot.
+
+---
+
+### Passo 2B: Instalação Fora do Active Directory (Workgroup)
+Para computadores que **não estão no domínio** (filiais, redes externas, home office ou redes segmentadas), utilize os scripts dedicados na pasta `scripts/`:
+
+1. **Definir o IP / Host do Servidor:**
+   Abra o script desejado (`instalar_workgroup.bat` ou `instalar_workgroup_tag_manual.bat`) e altere a variável `SERVER_HOST`:
+   ```bat
+   set "SERVER_HOST=200.x.x.x"
+   ```
+2. **Escolher a forma de instalação:**
+   * **Instalação Padrão (Sem perguntas):** Execute com botão direito em `scripts/instalar_workgroup.bat` -> **"Executar como Administrador"**. O script instala o agente, assume a TAG como `%COMPUTERNAME%`, copia o `CadastroPatrimonio.exe` para `Program Files`, configura a chave `Run` no Registro e inicia o formulário.
+   * **Instalação com TAG Manual:** Execute com botão direito em `scripts/instalar_workgroup_tag_manual.bat` -> **"Executar como Administrador"**. O prompt solicitará a digitação da TAG personalizada (ex: `VIC-123456`) e configurará o agente imediatamente com essa identificação.
+3. Para mais detalhes, consulte o manual dedicado: [docs/instalacao_workgroup_instrucoes.md](docs/instalacao_workgroup_instrucoes.md).
 
 ---
 
@@ -179,7 +197,7 @@ Para gerar **dois pacotes separados** (x86 e x64) — o `install_ocs_agent.bat` 
 ---
 
 ### Passo 4: Distribuir a Aplicação de Cadastro (Logon)
-1. Copie **apenas o arquivo [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/CadastroPatrimonio.exe)** para a pasta da GPO de usuários (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\CadastroPatrimonio.exe`).
+1. Copie o arquivo [CadastroPatrimonio.exe](client_app/CadastroPatrimonio.exe) (junto ao `CadastroPatrimonio.exe.config`) para a pasta da GPO de usuários (ex: `\\SEU_DOMINIO\SYSVOL\SEU_DOMINIO\scripts\CadastroPatrimonio.exe`).
 2. No **GPMC**:
    * Edite a GPO de usuários.
    * Vá em: `Configurações do Usuário` -> `Políticas` -> `Configurações do Windows` -> `Scripts (Logon/Logoff)` -> **Logon**.
@@ -212,7 +230,7 @@ Para gerar **dois pacotes separados** (x86 e x64) — o `install_ocs_agent.bat` 
 
 ## 🔒 Segurança e Matriz de Criticidade
 
-O projeto passou por auditoria rigorosa de segurança, com relatório ilustrado disponível em [relatorio_seguranca_matriz_criticidade.pdf](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/docs/relatorio_seguranca_matriz_criticidade.pdf).
+O projeto passou por auditoria rigorosa de segurança, com relatório ilustrado disponível em [relatorio_seguranca_matriz_criticidade.pdf](docs/relatorio_seguranca_matriz_criticidade.pdf) e documentação consolidada em [documento_unico_manual_completo.pdf](docs/documento_unico_manual_completo.pdf).
 
 ### Destaques das Proteções Implementadas:
 * ✅ **Token Criptográfico (`X-API-TOKEN`):** Impede que requisições avulsas forjem cadastros na rede.
@@ -270,15 +288,12 @@ del /f /q "%LocalAppData%\OCS_Inventario\*.*" 2>nul
 * **Log de erros da API de Ingestão:** `/var/log/ocs_cadastro_api_error.log` (no servidor Linux)
 * **Log da Sincronização de Nomes:** `/var/log/ocs_sync_patrimonio.log` (no servidor Linux)
 
-### 4. Como recompilar o executável caso eu altere o IP do servidor?
-Edite o arquivo [AppConfig.cs](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/AppConfig.cs) e execute no Prompt de Comando:
-```cmd
-cd client_app
-build.bat
-```
-O script utiliza o compilador C# nativo (`csc.exe`) do Windows e gera o binário otimizado.
-
----
-
-### 📦 Pacote Completo do Projeto
-* Arquivo ZIP pronto para implantação: [ocs_inventory_system.zip](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/ocs_inventory_system.zip)
+### 4. Como alterar o IP/URL do servidor para o executável de cadastro?
+* **Forma recomendada (Sem recompilar):** O executável `CadastroPatrimonio.exe` lê prioritariamente o valor `ApiEndpointUrl` gravado no Registro do Windows em `HKLM\Software\OCS_Inventario`. Os scripts `instalar_workgroup.bat` já realizam essa gravação automaticamente conforme a variável `SERVER_HOST`.
+* **Recompilação nativa (Se desejar alterar o valor padrão embutido):**
+  Edite o arquivo [AppConfig.cs](client_app/AppConfig.cs) e execute no Prompt de Comando:
+  ```cmd
+  cd client_app
+  build.bat
+  ```
+  O script utiliza o compilador C# nativo (`csc.exe`) do Windows e gera os 4 binários otimizados (.NET 3.5, 4.6, 4.8 e Unificado).

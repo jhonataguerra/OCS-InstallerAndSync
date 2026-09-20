@@ -126,20 +126,19 @@ sem reinstalar — ideal para boots repetidos via GPO.
 Antes de distribuir via GPO, valide o script em uma máquina de homologação:
 
 ```powershell
-# Na máquina de desenvolvimento (PowerShell como administrador):
-cd D:\DEV\GitHub\OCS1\tests
+# Na raiz do repositório (PowerShell como administrador):
+cd tests
 powershell -ExecutionPolicy Bypass -File test_install_agent.ps1
 ```
 
-Ou via orquestrador completo (testes + relatório de segurança):
+Ou via orquestrador completo (10 testes + gate de segurança + documentação unificada em PDF):
 
 ```cmd
-cd D:\DEV\GitHub\OCS1
 python scripts\run_tests_and_security.py
 ```
 
 Consulte [tests/README_testes.md](../tests/README_testes.md) para detalhes
-sobre os casos de teste e interpretação dos resultados.
+sobre os casos de teste e interpretação dos resultados. Para computadores fora do domínio (Workgroup), consulte [docs/instalacao_workgroup_instrucoes.md](instalacao_workgroup_instrucoes.md).
 
 ---
 

@@ -1,6 +1,6 @@
 # Guia da Aplicação Executável de Cadastro (Etapa 2)
 
-A aplicação [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/CadastroPatrimonio.exe) é um executável Windows Forms ultra-leve, compilado nativamente contra o **.NET Framework 3.5**, garantindo compatibilidade imediata e sem dependências externas desde o **Windows 7 32 bits (x86)** até o **Windows 11 64 bits**.
+A aplicação [CadastroPatrimonio.exe](../client_app/CadastroPatrimonio.exe) é um executável Windows Forms ultra-leve, com suporte a **.NET Framework 3.5, 4.6 e 4.8**, garantindo compatibilidade imediata e sem dependências externas desde o **Windows 7 32 bits (x86)** até o **Windows 11 64 bits**.
 
 ---
 
@@ -56,7 +56,7 @@ mais exibida."                           │
 ## 3. Segurança e Distribuição Corporativa
 
 * **Token de Segurança Integrado:** A aplicação envia no cabeçalho HTTP o token criptográfico `X-API-TOKEN`, impedindo injeção de dados falsos por terceiros na rede.
-* **Distribuição via GPO:** Publique apenas o arquivo [CadastroPatrimonio.exe](file:///C:/Users/lol/.gemini/antigravity/worktrees/OCS1/orchestration_ocs_inventory_system/client_app/CadastroPatrimonio.exe) no compartilhamento de logon (`\\SEU_DOMINIO\SYSVOL\...`).
+* **Distribuição via GPO:** Publique o arquivo [CadastroPatrimonio.exe](../client_app/CadastroPatrimonio.exe) (junto ao `CadastroPatrimonio.exe.config`) no compartilhamento de logon (`\\SEU_DOMINIO\SYSVOL\...`). Para instalação fora do domínio, utilize os scripts em [docs/instalacao_workgroup_instrucoes.md](instalacao_workgroup_instrucoes.md).
 
 ---
 

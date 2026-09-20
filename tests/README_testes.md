@@ -57,6 +57,8 @@ python scripts\run_tests_and_security.py
 | **T-06** | Resiliência / Erros | Nenhum instalador presente na pasta → `exit 1` e `ERRO CRITICO` no log |
 | **T-07** | Log | Log gerado em `C:\Windows\Temp\ocs_agent_install.log` contém o `COMPUTERNAME` |
 | **T-08** | Log | Falha crítica gera entrada com prefixo `ERRO CRITICO` no log |
+| **T-09** | Parametrização Workgroup | URL customizada do servidor OCS recebida como argumento `%1` → aplicada e logada |
+| **T-10** | Parametrização Workgroup | TAG manual recebida como argumento `%2` → aplicada no instalador `/TAG` e logada |
 
 ---
 
